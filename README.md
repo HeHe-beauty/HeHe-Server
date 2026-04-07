@@ -1,0 +1,67 @@
+# HEHE Backend
+
+_last update : 26.04.07_
+레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
+
+---
+
+## 기술 스택
+
+| 항목 | 버전 |
+|---|---|
+| Java | 17 |
+| Spring Boot | 3.5 |
+| MyBatis | 3.0.3 |
+| MySQL | 8 |
+| Redis | - |
+| Springdoc OpenAPI (Swagger) | 2.8.0 |
+
+---
+
+## 실행 환경
+
+- MySQL 데이터베이스: `hehe_db`
+- 기본 포트: `8080`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+---
+
+## 구현된 API
+
+### Common
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/common/time` | 서버 현재 시각 조회 |
+
+### Article
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/articles` | 아티클 목록 조회 |
+| GET | `/api/v1/articles/{articleId}` | 아티클 단건 조회 |
+
+### Equipment
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/equipments/main` | 홈 노출 기기 목록 조회 |
+| GET | `/api/v1/equipments/{equipId}` | 기기 단건 조회 |
+
+### Schedule
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/schedules/upcoming` | 7일간 예약 일정 조회 |
+| POST | `/api/v1/schedules` | 예약 일정 생성 |
+| GET | `/api/v1/schedules/{scheduleId}` | 예약 일정 단건 조회 |
+| PATCH | `/api/v1/schedules/{scheduleId}` | 예약 일정 수정 |
+| DELETE | `/api/v1/schedules/{scheduleId}` | 예약 일정 삭제 |
+| POST | `/api/v1/schedules/{scheduleId}/alarms` | 알림 등록 |
+| DELETE | `/api/v1/schedules/{scheduleId}/alarms/{alarmType}` | 알림 삭제 |
+
+---
+
+## 미구현 (예정)
+
+- Auth / JWT (소셜 로그인, Refresh Token)
+- User (회원가입 · 탈퇴 · 정보 수정)
+- Hospital (지도 기반 병원 조회 · 검색 · 상세)
+- Bookmark (병원 찜하기)
+- FCM 푸시 알림

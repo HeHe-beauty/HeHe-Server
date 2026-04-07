@@ -1,0 +1,257 @@
+package org.dev.hehe.controller.schedule;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
+import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
+import org.dev.hehe.dto.schedule.ScheduleResponse;
+import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+
+/**
+ * Schedule API Swagger 명세 인터페이스
+ * - Swagger 어노테이션만 정의
+ * - 실제 구현은 ScheduleController
+ */
+@Tag(name = "Schedule", description = "캘린더 일정 API")
+public interface ScheduleApiSpecification {
+
+    @Operation(
+            summary = "일정 단건 조회",
+            description = "scheduleId로 일정 상세와 연결된 알림 목록을 함께 반환합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "scheduleId": 1741680000000,
+                                        "hospitalName": "강남 제모 클리닉",
+                                        "procedureName": "겨드랑이 레이저 제모",
+                                        "visitTime": 1741680000,
+                                        "alarmEnabled": true,
+                                        "alarms": [
+                                          { "alarmType": "1H", "alarmTime": 1741676400, "isSent": false },
+                                          { "alarmType": "1D", "alarmTime": 1741593600, "isSent": false }
+                                        ]
+                                      }
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "일정 없음",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "S001",
+                                      "message": "일정을 찾을 수 없습니다."
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<ScheduleResponse> getSchedule(
+            @Parameter(description = "조회할 일정 ID", required = true) @PathVariable Long scheduleId
+    );
+
+    @Operation(
+            summary = "홈 화면 7일 일정 조회",
+            description = """
+                    오늘(서버 기준 00:00:00)부터 7일간의 일정 목록을 반환합니다.
+                    visit_time은 Unix timestamp(seconds)로 반환되며, 시간대 전환은 클라이언트에서 처리합니다.
+
+                    TODO: Auth 구현 후 userId 파라미터 제거 예정 (JWT에서 자동 추출)
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "scheduleId": 1001,
+                                          "hospitalName": "강남 제모 클리닉",
+                                          "procedureName": "겨드랑이 레이저 제모",
+                                          "visitTime": 1741680000,
+                                          "alarmEnabled": true,
+                                          "alarms": [
+                                            { "alarmType": "1H", "alarmTime": 1741676400, "isSent": false }
+                                          ]
+                                        },
+                                        {
+                                          "scheduleId": 1002,
+                                          "hospitalName": "홍대 스킨케어",
+                                          "visitTime": 1741766400,
+                                          "alarmEnabled": false,
+                                          "alarms": []
+                                        }
+                                      ]
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "userId 파라미터 누락",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "C002",
+                                      "message": "잘못된 요청 값입니다."
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(
+            @Parameter(description = "조회할 유저 ID (TODO: Auth 구현 후 제거)", required = true)
+            @RequestParam Long userId
+    );
+
+    @Operation(
+            summary = "일정 생성",
+            description = """
+                    방문 일정을 생성합니다. alarm_enabled 는 항상 true 로 저장됩니다.
+                    
+                    TODO: Auth 구현 후 요청 body의 userId 제거 예정 (JWT에서 자동 추출)
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "일정 생성 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "scheduleId": 1741680000000
+                                      }
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "필수값 누락 또는 잘못된 alarmType",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "C002",
+                                      "message": "잘못된 요청 값입니다."
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<ScheduleCreateResponse> createSchedule(@RequestBody ScheduleCreateRequest request);
+
+    @Operation(
+            summary = "일정 수정",
+            description = """
+                    방문 일정의 병원명·시술명·방문시각을 부분 수정합니다. (PATCH)
+
+                    - 전달된 필드만 수정하며, null 인 필드는 기존값을 유지합니다.
+                    - hospitalName, procedureName, visitTime 중 최소 하나 이상 전달해야 합니다.
+                    - 수정 완료 후 최신 일정 상세(알림 목록 포함)를 반환합니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "수정 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "scheduleId": 1741680000000,
+                                        "hospitalName": "수정된 클리닉",
+                                        "procedureName": "전신 레이저 제모",
+                                        "visitTime": 1741766400,
+                                        "alarmEnabled": true,
+                                        "alarms": [
+                                          { "alarmType": "1H", "alarmTime": 1741762800, "isSent": false }
+                                        ]
+                                      }
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "수정 필드 없음 또는 hospitalName 공백",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "C002",
+                                      "message": "잘못된 요청 값입니다."
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "일정 없음",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "S001",
+                                      "message": "일정을 찾을 수 없습니다."
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<ScheduleResponse> updateSchedule(
+            @Parameter(description = "수정할 일정 ID", required = true) @PathVariable Long scheduleId,
+            @RequestBody ScheduleUpdateRequest request
+    );
+
+    @Operation(
+            summary = "일정 삭제",
+            description = """
+                    방문 일정을 삭제합니다. 연관된 알림(tb_schedule_alarm)도 함께 삭제됩니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "삭제 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    { "success": true }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "일정 없음",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": false,
+                                      "errorCode": "S001",
+                                      "message": "일정을 찾을 수 없습니다."
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<Void> deleteSchedule(
+            @Parameter(description = "삭제할 일정 ID", required = true) @PathVariable Long scheduleId
+    );
+}

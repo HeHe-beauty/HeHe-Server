@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: hehe
+  datasource:
+    url: jdbc:mysql://localhost:3306/hehe_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  type-aliases-package: org.dev.hehe
+  configuration:
+    map-underscore-to-camel-case: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html        # 접속 경로 단축
+    tags-sorter: alpha             # 태그 알파벳 정렬
+    operations-sorter: alpha       # 메서드 알파벳 정렬
+  api-docs:
+    path: /v3/api-docs
+
+# Kakao Local API — 실제 키는 application-local.yml 에서 관리 (gitignore 적용)
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}

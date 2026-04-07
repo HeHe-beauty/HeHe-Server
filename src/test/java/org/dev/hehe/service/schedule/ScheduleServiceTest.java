@@ -1,0 +1,422 @@
+package org.dev.hehe.service.schedule;
+
+import lombok.extern.slf4j.Slf4j;
+import org.dev.hehe.domain.schedule.Schedule;
+import org.dev.hehe.domain.schedule.ScheduleAlarm;
+import org.dev.hehe.dto.schedule.ScheduleResponse;
+import org.dev.hehe.mapper.schedule.ScheduleMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+
+import org.dev.hehe.common.exception.CommonException;
+import org.dev.hehe.common.exception.ErrorCode;
+import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+/**
+ * ScheduleService 단위 테스트
+ * - Spring Context 없이 Mockito로 Mapper를 Mock 처리하여 Service 비즈니스 로직만 검증
+ */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ScheduleService 테스트")
+@Slf4j
+class ScheduleServiceTest {
+
+    @Mock
+    private ScheduleMapper scheduleMapper;
+
+    @InjectMocks
+    private ScheduleService scheduleService;
+
+    /**
+     * 테스트용 Schedule 도메인 객체 생성 헬퍼
+     * MyBatis는 리플렉션으로 필드를 주입하므로 ReflectionTestUtils 사용
+     */
+    private Schedule createSchedule(Long scheduleId, String hospitalName, String procedureName,
+                                    Long visitTime, Boolean alarmEnabled) {
+        Schedule schedule = new Schedule();
+        ReflectionTestUtils.setField(schedule, "scheduleId", scheduleId);
+        ReflectionTestUtils.setField(schedule, "userId", 1L);
+        ReflectionTestUtils.setField(schedule, "hospitalName", hospitalName);
+        ReflectionTestUtils.setField(schedule, "procedureName", procedureName);
+        ReflectionTestUtils.setField(schedule, "visitTime", visitTime);
+        ReflectionTestUtils.setField(schedule, "alarmEnabled", alarmEnabled);
+        return schedule;
+    }
+
+    /**
+     * 테스트용 ScheduleAlarm 도메인 객체 생성 헬퍼
+     */
+    private ScheduleAlarm createAlarm(Long scheduleId, String alarmType, Long alarmTime, Boolean isSent) {
+        ScheduleAlarm alarm = new ScheduleAlarm();
+        ReflectionTestUtils.setField(alarm, "scheduleId", scheduleId);
+        ReflectionTestUtils.setField(alarm, "alarmType", alarmType);
+        ReflectionTestUtils.setField(alarm, "alarmTime", alarmTime);
+        ReflectionTestUtils.setField(alarm, "isSent", isSent);
+        return alarm;
+    }
+
+    @Test
+    @DisplayName("7일 일정 조회 성공 - 알림 포함")
+    void getUpcomingSchedules_success_withAlarms() {
+        // given
+        long visitTime = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() + 3600;
+        Schedule schedule = createSchedule(1001L, "강남 제모 클리닉", "겨드랑이 레이저 제모", visitTime, true);
+
+        ScheduleAlarm alarm1 = createAlarm(1001L, "1H", visitTime - 3600, false);
+        ScheduleAlarm alarm2 = createAlarm(1001L, "1D", visitTime - 86400, false);
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of(schedule));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(1001L)))
+                .willReturn(List.of(alarm1, alarm2));
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getScheduleId()).isEqualTo(1001L);
+        assertThat(result.get(0).getHospitalName()).isEqualTo("강남 제모 클리닉");
+        assertThat(result.get(0).getProcedureName()).isEqualTo("겨드랑이 레이저 제모");
+        assertThat(result.get(0).getAlarms()).hasSize(2);
+        assertThat(result.get(0).getAlarms().get(0).getAlarmType()).isEqualTo("1H");
+        assertThat(result.get(0).getAlarms().get(1).getAlarmType()).isEqualTo("1D");
+    }
+
+    @Test
+    @DisplayName("7일 일정 조회 성공 - 알림 없는 일정 (빈 리스트)")
+    void getUpcomingSchedules_success_noAlarms() {
+        // given
+        long visitTime = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() + 7200;
+        Schedule schedule = createSchedule(1002L, "홍대 스킨케어", null, visitTime, false);
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of(schedule));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(1002L)))
+                .willReturn(List.of());
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getProcedureName()).isNull();
+        assertThat(result.get(0).getAlarms()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("7일 일정 없을 때 빈 리스트 반환 — findAlarmsByScheduleIds 호출 없음")
+    void getUpcomingSchedules_emptySchedules_noAlarmQuery() {
+        // given
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of());
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+
+        // then: 일정이 없으면 알림 쿼리는 실행되면 안 됨 (IN () 방지)
+        assertThat(result).isEmpty();
+        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong());
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    @Test
+    @DisplayName("복수 일정 조회 시 각 일정의 알림이 올바르게 매핑되는지 검증")
+    void getUpcomingSchedules_multipleSchedules_alarmGroupingCorrect() {
+        // given: 일정 2개, 각각 알림 다르게 설정
+        long base = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        Schedule s1 = createSchedule(1001L, "강남 클리닉", null, base + 3600, true);
+        Schedule s2 = createSchedule(1002L, "홍대 클리닉", null, base + 7200, true);
+
+        ScheduleAlarm a1 = createAlarm(1001L, "1H", base, false);
+        ScheduleAlarm a2 = createAlarm(1002L, "3H", base, false);
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of(s1, s2));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(1001L, 1002L)))
+                .willReturn(List.of(a1, a2));
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+
+        // then: 각 일정에 해당하는 알림만 포함되는지 확인
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getAlarms()).hasSize(1);
+        assertThat(result.get(0).getAlarms().get(0).getAlarmType()).isEqualTo("1H");
+        assertThat(result.get(1).getAlarms()).hasSize(1);
+        assertThat(result.get(1).getAlarms().get(0).getAlarmType()).isEqualTo("3H");
+    }
+
+    @Test
+    @DisplayName("조회 범위가 오늘 00:00:00 ~ +7일 00:00:00 인지 검증")
+    void getUpcomingSchedules_verifyTimeRange() {
+        // given
+        long expectedStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long expectedEnd   = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).plusDays(7).toEpochSecond();
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(anyLong(), anyLong(), anyLong()))
+                .willReturn(List.of());
+
+        // when
+        scheduleService.getUpcomingSchedules(1L);
+
+        // then
+        ArgumentCaptor<Long> startCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Long> endCaptor   = ArgumentCaptor.forClass(Long.class);
+        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), startCaptor.capture(), endCaptor.capture());
+
+        assertThat(startCaptor.getValue()).isEqualTo(expectedStart);
+        assertThat(endCaptor.getValue()).isEqualTo(expectedEnd);
+    }
+
+    @Test
+    @DisplayName("Mapper에서 RuntimeException 발생 시 예외 전파")
+    void getUpcomingSchedules_mapperThrowsException() {
+        // given
+        willThrow(new RuntimeException("DB connection error"))
+                .given(scheduleMapper).findSchedulesByUserIdAndPeriod(anyLong(), anyLong(), anyLong());
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.getUpcomingSchedules(1L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DB connection error");
+    }
+
+    // =============================================
+    // getScheduleById 테스트
+    // =============================================
+
+    @Test
+    @DisplayName("일정 단건 조회 성공 - 알림 포함")
+    void getScheduleById_success_withAlarms() {
+        // given
+        long scheduleId = 1001L;
+        long visitTime = 1741680000L;
+        Schedule schedule = createSchedule(scheduleId, "강남 제모 클리닉", "겨드랑이 레이저 제모", visitTime, true);
+
+        ScheduleAlarm alarm1 = createAlarm(scheduleId, "1H", visitTime - 3_600, false);
+        ScheduleAlarm alarm2 = createAlarm(scheduleId, "1D", visitTime - 86_400, false);
+
+        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of(alarm1, alarm2));
+
+        // when
+        ScheduleResponse result = scheduleService.getScheduleById(scheduleId);
+
+        // then
+        assertThat(result.getScheduleId()).isEqualTo(scheduleId);
+        assertThat(result.getHospitalName()).isEqualTo("강남 제모 클리닉");
+        assertThat(result.getProcedureName()).isEqualTo("겨드랑이 레이저 제모");
+        assertThat(result.getAlarmEnabled()).isTrue();
+        assertThat(result.getAlarms()).hasSize(2);
+        assertThat(result.getAlarms().get(0).getAlarmType()).isEqualTo("1H");
+        assertThat(result.getAlarms().get(1).getAlarmType()).isEqualTo("1D");
+    }
+
+    @Test
+    @DisplayName("일정 단건 조회 성공 - 알림 없음 (빈 리스트)")
+    void getScheduleById_success_noAlarms() {
+        // given
+        long scheduleId = 1002L;
+        Schedule schedule = createSchedule(scheduleId, "홍대 스킨케어", null, 1741766400L, true);
+
+        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
+
+        // when
+        ScheduleResponse result = scheduleService.getScheduleById(scheduleId);
+
+        // then
+        assertThat(result.getScheduleId()).isEqualTo(scheduleId);
+        assertThat(result.getProcedureName()).isNull();
+        assertThat(result.getAlarms()).isEmpty();
+    }
+
+    // =============================================
+    // updateSchedule 테스트
+    // =============================================
+
+    /**
+     * 테스트용 ScheduleUpdateRequest 생성 헬퍼
+     */
+    private ScheduleUpdateRequest createUpdateRequest(String hospitalName, String procedureName, Long visitTime) {
+        ScheduleUpdateRequest request = new ScheduleUpdateRequest();
+        ReflectionTestUtils.setField(request, "hospitalName", hospitalName);
+        ReflectionTestUtils.setField(request, "procedureName", procedureName);
+        ReflectionTestUtils.setField(request, "visitTime", visitTime);
+        return request;
+    }
+
+    @Test
+    @DisplayName("일정 수정 성공 - hospitalName 만 변경")
+    void updateSchedule_success_hospitalNameOnly() {
+        // given
+        long scheduleId = 1001L;
+        long visitTime = 1741680000L;
+        Schedule existing = createSchedule(scheduleId, "구 클리닉", "제모", visitTime, true);
+        Schedule updated  = createSchedule(scheduleId, "신 클리닉", "제모", visitTime, true);
+        ScheduleUpdateRequest request = createUpdateRequest("신 클리닉", null, null);
+
+        given(scheduleMapper.findScheduleById(scheduleId))
+                .willReturn(Optional.of(existing))   // 존재 확인
+                .willReturn(Optional.of(updated));    // 수정 후 재조회
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
+
+        // when
+        ScheduleResponse result = scheduleService.updateSchedule(scheduleId, request);
+
+        // then
+        assertThat(result.getHospitalName()).isEqualTo("신 클리닉");
+        verify(scheduleMapper).updateSchedule(eq(scheduleId), eq("신 클리닉"), isNull(), isNull());
+    }
+
+    @Test
+    @DisplayName("일정 수정 성공 - 모든 필드 변경")
+    void updateSchedule_success_allFields() {
+        // given
+        long scheduleId = 1001L;
+        Schedule existing = createSchedule(scheduleId, "구 클리닉", "구 시술", 1741680000L, true);
+        Schedule updated  = createSchedule(scheduleId, "신 클리닉", "신 시술", 1741766400L, true);
+        ScheduleUpdateRequest request = createUpdateRequest("신 클리닉", "신 시술", 1741766400L);
+
+        given(scheduleMapper.findScheduleById(scheduleId))
+                .willReturn(Optional.of(existing))
+                .willReturn(Optional.of(updated));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
+
+        // when
+        ScheduleResponse result = scheduleService.updateSchedule(scheduleId, request);
+
+        // then
+        assertThat(result.getHospitalName()).isEqualTo("신 클리닉");
+        assertThat(result.getProcedureName()).isEqualTo("신 시술");
+        assertThat(result.getVisitTime()).isEqualTo(1741766400L);
+        verify(scheduleMapper).updateSchedule(eq(scheduleId), eq("신 클리닉"), eq("신 시술"), eq(1741766400L));
+    }
+
+    @Test
+    @DisplayName("일정 수정 실패 - 존재하지 않는 scheduleId → S001")
+    void updateSchedule_notFound() {
+        // given
+        ScheduleUpdateRequest request = createUpdateRequest("클리닉", null, null);
+        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.updateSchedule(999L, request))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
+
+        verify(scheduleMapper, never()).updateSchedule(anyLong(), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("일정 수정 실패 - 모든 필드 null → INVALID_INPUT")
+    void updateSchedule_allFieldsNull() {
+        // given
+        ScheduleUpdateRequest request = createUpdateRequest(null, null, null);
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.updateSchedule(1001L, request))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        // 검증 실패이므로 mapper 호출 없어야 함
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    @Test
+    @DisplayName("일정 수정 실패 - hospitalName 공백 → INVALID_INPUT")
+    void updateSchedule_blankHospitalName() {
+        // given
+        ScheduleUpdateRequest request = createUpdateRequest("   ", null, null);
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.updateSchedule(1001L, request))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    // =============================================
+    // deleteSchedule 테스트
+    // =============================================
+
+    @Test
+    @DisplayName("일정 삭제 성공 - 알림 먼저 삭제 후 일정 삭제 순서 검증")
+    void deleteSchedule_success() {
+        // given
+        long scheduleId = 1001L;
+        Schedule existing = createSchedule(scheduleId, "강남 클리닉", null, 1741680000L, true);
+        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(existing));
+
+        // when
+        scheduleService.deleteSchedule(scheduleId);
+
+        // then: 알림 전체 삭제 → 일정 삭제 순서 보장
+        org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(scheduleMapper);
+        inOrder.verify(scheduleMapper).findScheduleById(scheduleId);
+        inOrder.verify(scheduleMapper).deleteAllAlarmsByScheduleId(scheduleId);
+        inOrder.verify(scheduleMapper).deleteSchedule(scheduleId);
+    }
+
+    @Test
+    @DisplayName("일정 삭제 실패 - 존재하지 않는 scheduleId → S001")
+    void deleteSchedule_notFound() {
+        // given
+        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.deleteSchedule(999L))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
+
+        verify(scheduleMapper).findScheduleById(999L);
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 scheduleId 조회 시 SCHEDULE_NOT_FOUND 예외 발생")
+    void getScheduleById_notFound() {
+        // given: mapper가 빈 Optional 반환
+        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.getScheduleById(999L))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> {
+                    CommonException ce = (CommonException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND);
+                    assertThat(ce.getErrorCode().getCode()).isEqualTo("S001");
+                });
+
+        // 일정이 없으면 알림 쿼리는 호출되면 안 됨
+        verify(scheduleMapper).findScheduleById(999L);
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+}

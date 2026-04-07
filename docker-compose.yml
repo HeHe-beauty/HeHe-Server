@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  hehe-db:
+    image: mysql:8.0
+    container_name: hehe-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root # root 계정 비밀번호
+      MYSQL_DATABASE: hehe_db   # 초기 생성 데이터베이스 명
+      MYSQL_TZ: Asia/Seoul
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql_data:/var/lib/mysql # 데이터 유실 방지를 위한 볼륨 마운트

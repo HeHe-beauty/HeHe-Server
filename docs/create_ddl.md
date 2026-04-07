@@ -27,25 +27,6 @@ CREATE TABLE if not exists tb_user
   COLLATE = utf8mb4_unicode_ci;
 
 -- 2.2 병원 및 기기 도메인
-
--- 행정구역 중심 좌표 참조 테이블
--- 지도 클러스터링 시 핀 위치 산출에 사용 (병원 행마다 중복 저장 방지)
--- parent_name: SIDO는 빈 문자열, SIGUNGU는 시도명, DONG은 시군구명
-CREATE TABLE tb_district
-(
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    level       ENUM ('SIDO', 'SIGUNGU', 'DONG') NOT NULL COMMENT '행정구역 단계',
-    name        VARCHAR(30)                       NOT NULL COMMENT '행정구역명 (예: 강남구)',
-    parent_name VARCHAR(30)                       NOT NULL DEFAULT '' COMMENT '상위 행정구역명 (SIDO는 빈 문자열, SIGUNGU는 시도명, DONG은 시군구명)',
-    center_lat  DECIMAL(10, 7)                    NOT NULL COMMENT '행정구역 중심 위도',
-    center_lng  DECIMAL(10, 7)                    NOT NULL COMMENT '행정구역 중심 경도',
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_district (level, name, parent_name)
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
 CREATE TABLE tb_hospital
 (
     id             BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -53,18 +34,12 @@ CREATE TABLE tb_hospital
     name           VARCHAR(100)  NOT NULL COMMENT '병원 명칭',
     address        VARCHAR(255)  NOT NULL COMMENT '도로명 주소',
     location       POINT         NOT NULL SRID 4326 COMMENT '위도/경도 좌표 데이터 (WGS84)',
-    sido_name      VARCHAR(20)   NOT NULL COMMENT '시/도명 (예: 서울특별시) — 클러스터링 GROUP BY 및 tb_district JOIN 키',
-    sigungu_name   VARCHAR(20)   NOT NULL COMMENT '시/군/구명 (예: 강남구) — 클러스터링 GROUP BY 및 tb_district JOIN 키',
-    dong_name      VARCHAR(30)   NOT NULL COMMENT '읍/면/동명 (예: 역삼동) — 클러스터링 GROUP BY 및 tb_district JOIN 키',
     contact_url    VARCHAR(255)  COMMENT '외부 예약 링크',
     contact_number VARCHAR(255)  NOT NULL COMMENT '문의 전화번호',
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL ON UPDATE CURRENT_TIMESTAMP,
     SPATIAL INDEX idx_location (location),
-    FULLTEXT INDEX idx_hospital_name (name),
-    INDEX idx_sido (sido_name),
-    INDEX idx_sigungu (sigungu_name),
-    INDEX idx_dong (dong_name)
+    FULLTEXT INDEX idx_hospital_name (name)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

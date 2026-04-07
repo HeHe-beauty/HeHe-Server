@@ -112,44 +112,23 @@ HEHE 서비스를 위한 핵심 엔티티 구조
 
 ### **<병원 관련 도메인>**
 
-### **tb_district (행정구역 중심 좌표 참조)**
-
-지도 클러스터링 시 핀 위치(중심 좌표) 산출을 위한 참조 테이블.
-병원 행마다 중복 저장하는 대신 JOIN으로 조회한다.
-
-| **컬럼명**        | **타입**        | **제약사항**       | **설명**                                                  |
-|---------------|---------------|----------------|----------------------------------------------------------|
-| `id`          | BigInt        | PK, Auto       | id                                                       |
-| `level`       | Enum          | Not Null       | 행정구역 단계 (SIDO, SIGUNGU, DONG)                           |
-| `name`        | Varchar(30)   | Not Null       | 행정구역명 (예: 강남구)                                          |
-| `parent_name` | Varchar(30)   | Not Null, Default('') | 상위 행정구역명. SIDO는 빈 문자열, SIGUNGU는 시도명, DONG은 시군구명 |
-| `center_lat`  | Decimal(10,7) | Not Null       | 행정구역 중심 위도                                              |
-| `center_lng`  | Decimal(10,7) | Not Null       | 행정구역 중심 경도                                              |
-
-- **Unique**
-  - `(level, name, parent_name)` : 동명이인 행정구역 구분 (예: 여러 시도에 존재하는 '역삼동')
-
 ### **tb_hospital (병원)**
 
-| **컬럼명**          | **타입**        | **제약사항** | **설명**                                              |
-|-----------------|---------------|----------|-----------------------------------------------------|
-| `id`            | BigInt        | PK, Auto | id                                                  |
-| `hospital_id`   | BigInt        | Unique   | 병원 ID                                               |
-| `name`          | Varchar(100)  | Not Null | 병원 명칭                                               |
-| `address`       | Varchar(255)  | Not Null | 도로명 주소                                              |
-| `location`      | Point (SRID 4326) | Not Null | 위도/경도 좌표 데이터 (WGS84 Spatial 데이터)               |
-| `sido_name`     | Varchar(20)   | Not Null | 시/도명 (예: 서울특별시). 클러스터링 GROUP BY 및 tb_district JOIN 키 |
-| `sigungu_name`  | Varchar(20)   | Not Null | 시/군/구명 (예: 강남구). 클러스터링 GROUP BY 및 tb_district JOIN 키 |
-| `dong_name`     | Varchar(30)   | Not Null | 읍/면/동명 (예: 역삼동). 클러스터링 GROUP BY 및 tb_district JOIN 키 |
-| `contact_url`   | Varchar(255)  | -        | 외부 문의/예약 링크                                         |
-| `contact_number` | Varchar(255) | Not Null | 문의 전화 번호                                            |
+| **컬럼명**          | **타입**            | **제약사항** | **설명**                          |
+|-----------------|-------------------|----------|----------------------------------|
+| `id`            | BigInt            | PK, Auto | id                               |
+| `hospital_id`   | BigInt            | Unique   | 병원 ID                            |
+| `name`          | Varchar(100)      | Not Null | 병원 명칭                            |
+| `address`       | Varchar(255)      | Not Null | 도로명 주소                           |
+| `location`      | Point (SRID 4326) | Not Null | 위도/경도 좌표 데이터 (WGS84 Spatial 데이터) |
+| `contact_url`   | Varchar(255)      | -        | 외부 문의/예약 링크                      |
+| `contact_number` | Varchar(255)     | Not Null | 문의 전화 번호                         |
 
 - **Unique**
   - `hospital_id`
 - **Index**
-  - `location` : SPATIAL INDEX. 뷰포트 바운딩박스 쿼리(`MBRContains`) 필수
+  - `location` : SPATIAL INDEX. 뷰포트 바운딩박스 쿼리(`MBRContains`) 및 좌표 기반 클러스터링 필수
   - `name` : FULLTEXT INDEX. 병원명 키워드 검색용
-  - `sido_name`, `sigungu_name`, `dong_name` : 클러스터링 GROUP BY 성능용
 
 ### **tb_hospital_tag (병원별 특징 태그)**
 

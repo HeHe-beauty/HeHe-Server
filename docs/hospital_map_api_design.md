@@ -4,48 +4,46 @@
 
 ## 0. 쉽게 이해하는 지도 API 동작 구조
 
-지도 API는 크게 **"지도를 보여주는 것"** 과 **"병원 정보를 보여주는 것"** 두 가지로 나뉩니다.
+### 핵심 원칙
 
-### 줌 레벨에 따라 보이는 것이 달라진다
+- 지도에는 항상 **숫자 버블**만 표시됩니다.
+- 줌 레벨에 따라 **좌표 반올림 정밀도**만 달라집니다. 응답 구조는 항상 동일합니다.
+- 버블에는 숫자만 표시되며, 지역 이름은 표시하지 않습니다.
 
-지도를 축소하면 넓은 지역을 보게 되고, 확대하면 좁은 지역을 자세히 보게 됩니다.
-이때 **병원이 얼마나 모여서 보이느냐**가 달라집니다.
-
-```
-[많이 축소]                [중간]                  [많이 확대]
-
-  서울 ●142          강남구 ●23   서초구 ●8        📍 📍 📍
-  경기 ●89           마포구 ●11                    📍    📍
-  인천 ●34
-
-  → 시/도 단위로 묶임     → 시/군/구 단위로 묶임    → 개별 병원 핀
-```
-
-### 클러스터(숫자 버블)를 클릭하면?
-
-줌인이 되는 것이 아닙니다.
-**그 구역에 속한 병원 목록이 하단 시트(Bottom Sheet)로 올라옵니다.**
+### 줌 레벨에 따라 묶이는 범위가 달라짐
 
 ```
-  강남구 ●23  ← 클릭
-       ↓
-  ┌──────────────────────────┐
-  │ 강남구 병원 23개           │  ← 하단 시트
-  │ ───────────────────────  │
-  │ 📍 강남 제모 클리닉        │
-  │    서울 강남구 역삼동       │
-  │ ───────────────────────  │
-  │ 📍 역삼 스킨케어           │
-  │    서울 강남구 역삼동       │
-  └──────────────────────────┘
+[많이 축소]                [중간]                    [많이 확대]
+
+    ●142                ●23      ●8               ●3    ●1
+    ●89                 ●11                        ●1       ●2
+    ●34
+
+  넓은 범위로 묶임         중간 범위로 묶임            좁은 범위로 묶임
+  (precision=1, ~11km)  (precision=2, ~1km)      (precision=4, ~10m)
 ```
 
-### 개별 마커(핀) 또는 목록 아이템을 클릭하면?
+### 숫자 버블을 클릭하면?
 
-병원 상세 정보 화면으로 이동합니다.
+줌 레벨과 무관하게 동일하게 동작합니다.
+**그 위치에 속한 병원 목록이 하단 시트로 올라옵니다.**
 
 ```
-  📍 클릭  또는  목록에서 병원 클릭
+  ●23  ← 클릭          또는          ●3  ← 클릭 (최대 확대)
+     ↓                                   ↓
+  ┌──────────────────────────┐    ┌──────────────────────────┐
+  │ 병원 23개                 │    │ 이 위치 병원 3개           │
+  │ ───────────────────────  │    │ ───────────────────────  │
+  │ 강남 제모 클리닉           │    │ 강남 제모 클리닉           │
+  │ 역삼 스킨케어              │    │ 역삼 피부과               │
+  │ ...                      │    │ 강남성형외과               │
+  └──────────────────────────┘    └──────────────────────────┘
+```
+
+### 목록에서 병원을 클릭하면?
+
+```
+  목록에서 병원 클릭
        ↓
   ┌──────────────────────────┐
   │ 강남 제모 클리닉           │  ← 병원 상세
@@ -63,8 +61,8 @@
 | # | API | 호출 시점 |
 |---|---|---|
 | 1 | `GET /api/v1/hospitals/map` | 지도 화면 진입 / 이동 / 줌 변경 시마다 |
-| 2 | `GET /api/v1/hospitals` | 클러스터 숫자 클릭 시 |
-| 3 | `GET /api/v1/hospitals/{hospitalId}` | 마커 클릭 or 목록 아이템 클릭 시 |
+| 2 | `GET /api/v1/hospitals` | 숫자 버블 클릭 시 |
+| 3 | `GET /api/v1/hospitals/{hospitalId}` | 목록 아이템 클릭 시 |
 
 ---
 
@@ -72,10 +70,10 @@
 
 ---
 
-### API 1 — 지도 렌더링용 데이터 조회
+### API 1 — 지도 렌더링용 클러스터 데이터 조회
 
-지도가 보여주는 화면 영역(뷰포트)과 현재 줌 레벨을 받아서,
-클러스터 또는 개별 마커 데이터를 반환합니다.
+뷰포트 영역과 줌 레벨을 받아 클러스터 목록을 반환합니다.
+줌 레벨에 따라 좌표 반올림 정밀도(`precision`)가 달라지며, 응답 구조는 항상 동일합니다.
 
 ```
 GET /api/v1/hospitals/map
@@ -84,79 +82,51 @@ GET /api/v1/hospitals/map
   &zoomLevel=12                ← 현재 줌 레벨
 ```
 
-#### 줌 레벨 → 응답 타입 분기
+#### 줌 레벨 → 좌표 정밀도 매핑
 
-| zoomLevel | 응답 type | 클러스터 단위 | GROUP BY 기준 |
-|---|---|---|---|
-| 1 ~ 9 | `CLUSTER` | 시/도 (SIDO) | `sido_name` |
-| 10 ~ 12 | `CLUSTER` | 시/군/구 (SIGUNGU) | `sigungu_name` |
-| 13 ~ 14 | `CLUSTER` | 읍/면/동 (DONG) | `dong_name` |
-| 15 ~ | `MARKER` | 개별 병원 핀 | - |
+| zoomLevel | precision | 묶음 범위 |
+|---|---|---|
+| 1 ~ 9 | 1 | 약 11km |
+| 10 ~ 12 | 2 | 약 1km |
+| 13 ~ 14 | 3 | 약 100m |
+| 15 ~ | 4 | 약 10m |
 
 > 줌 레벨 경계값은 사용하는 지도 SDK (Naver Map / Kakao Map)에 따라 조정
 
-#### 응답 — CLUSTER 타입
-
-클러스터를 클릭했을 때 목록 API를 호출하기 위해 `level`, `name`, `parent` 를 함께 반환합니다.
+#### 응답
 
 ```json
 {
   "success": true,
   "data": {
-    "type": "CLUSTER",
+    "precision": 2,
     "items": [
-      {
-        "count": 23,
-        "lat": 37.517,
-        "lng": 127.047,
-        "level": "SIGUNGU",
-        "name": "강남구",
-        "parent": "서울특별시"
-      },
-      {
-        "count": 8,
-        "lat": 37.483,
-        "lng": 127.032,
-        "level": "SIGUNGU",
-        "name": "서초구",
-        "parent": "서울특별시"
-      }
+      { "count": 23, "lat": 37.52, "lng": 127.05 },
+      { "count": 8,  "lat": 37.48, "lng": 127.03 },
+      { "count": 1,  "lat": 37.51, "lng": 126.99 }
     ]
   }
 }
 ```
 
-#### 응답 — MARKER 타입
-
-마커 클릭 시 상세 API를 호출하기 위해 `hospitalId` 를 포함합니다.
-상세 정보(주소, 전화번호 등)는 담지 않습니다.
-
-```json
-{
-  "success": true,
-  "data": {
-    "type": "MARKER",
-    "items": [
-      { "hospitalId": 101, "name": "강남 제모 클리닉", "lat": 37.512, "lng": 127.059 },
-      { "hospitalId": 102, "name": "역삼 스킨케어",    "lat": 37.500, "lng": 127.041 }
-    ]
-  }
-}
-```
+- `precision`: 클라이언트가 목록 API 호출 시 그대로 전달하는 값
+- `lat`, `lng`: 반올림된 좌표 (클러스터 핀 위치 + 목록 API 식별자)
 
 ---
 
 ### API 2 — 클러스터 내 병원 목록 조회
 
-클러스터를 클릭했을 때 하단 시트에 표시할 병원 목록을 반환합니다.
-API 1의 클러스터 응답에 담긴 `level`, `name`, `parent` 값을 그대로 파라미터로 넘깁니다.
+버블을 클릭했을 때 하단 시트에 표시할 병원 목록을 반환합니다.
+API 1 응답의 `lat`, `lng`, `precision` 을 그대로 넘깁니다.
 
 ```
 GET /api/v1/hospitals
-  ?level=SIGUNGU          ← API 1 클러스터 응답의 level 값
-  &name=강남구             ← API 1 클러스터 응답의 name 값
-  &parent=서울특별시        ← API 1 클러스터 응답의 parent 값
+  ?lat=37.52          ← API 1 응답의 lat 그대로
+  &lng=127.05         ← API 1 응답의 lng 그대로
+  &precision=2        ← API 1 응답의 precision 그대로
 ```
+
+서버에서 `ROUND(ST_Y(location), precision) = lat AND ROUND(ST_X(location), precision) = lng` 조건으로 조회합니다.
 
 #### 응답
 
@@ -186,7 +156,7 @@ GET /api/v1/hospitals
 
 ### API 3 — 병원 상세 조회
 
-마커 클릭 또는 목록 아이템 클릭 시 병원의 전체 상세 정보를 반환합니다.
+목록 아이템 클릭 시 병원의 전체 상세 정보를 반환합니다.
 
 ```
 GET /api/v1/hospitals/{hospitalId}
@@ -218,43 +188,40 @@ GET /api/v1/hospitals/{hospitalId}
 ## 3. 전체 사용 흐름
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  STEP 1. 지도 화면 진입 or 이동/줌 변경 시마다              │
-│                                                         │
-│  GET /api/v1/hospitals/map                              │
-│    ?swLat=...&swLng=...&neLat=...&neLng=...&zoomLevel=12│
-└────────────────────────┬────────────────────────────────┘
-                         │
-            ┌────────────┴────────────┐
-            │ type = CLUSTER          │ type = MARKER
-            ▼                         ▼
-    지도에 숫자 버블 렌더링         지도에 핀 아이콘 렌더링
-    (count, lat, lng)             (hospitalId, name, lat, lng)
-            │                         │
-            │ 숫자 버블 클릭            │ 핀 클릭
-            ▼                         ▼
-┌───────────────────────┐   ┌──────────────────────────┐
-│  STEP 2.              │   │  STEP 3.                 │
-│  GET /api/v1/hospitals│   │  GET /api/v1/hospitals   │
-│    ?level=SIGUNGU     │   │      /{hospitalId}       │
-│    &name=강남구        │   └────────────┬─────────────┘
-│    &parent=서울특별시  │                │
-└───────────┬───────────┘                ▼
-            │                    병원 상세 화면 표시
-            ▼
-    하단 시트에 목록 표시
-    (hospitalId, name, address, tags ...)
-            │
-            │ 목록 아이템 클릭
-            ▼
-┌───────────────────────────┐
-│  STEP 3.                  │
-│  GET /api/v1/hospitals    │
-│      /{hospitalId}        │
-└───────────┬───────────────┘
-            │
-            ▼
-    병원 상세 화면 표시
+┌──────────────────────────────────────────────────────────┐
+│  STEP 1. 지도 화면 진입 or 이동/줌 변경 시마다               │
+│                                                          │
+│  GET /api/v1/hospitals/map                               │
+│    ?swLat=...&swLng=...&neLat=...&neLng=...&zoomLevel=12 │
+│                                                          │
+│  → 항상 숫자 클러스터 반환 { count, lat, lng }              │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+                           ▼
+                  지도에 숫자 버블 렌더링
+                  (모든 줌 레벨 동일한 구조)
+                           │
+                           │ 숫자 버블 클릭
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  STEP 2.                                                 │
+│  GET /api/v1/hospitals                                   │
+│    ?lat={API1.lat}&lng={API1.lng}&precision={API1.prec}  │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+                           ▼
+                  하단 시트에 병원 목록 표시
+                  (hospitalId, name, address, tags ...)
+                           │
+                           │ 목록 아이템 클릭
+                           ▼
+┌──────────────────────────────────────────────────────────┐
+│  STEP 3.                                                 │
+│  GET /api/v1/hospitals/{hospitalId}                      │
+└──────────────────────────┬───────────────────────────────┘
+                           │
+                           ▼
+                  병원 상세 화면 표시
 ```
 
 ---
@@ -263,44 +230,36 @@ GET /api/v1/hospitals/{hospitalId}
 
 | API | 사용 테이블 | 핵심 쿼리 전략 |
 |---|---|---|
-| map (CLUSTER) | `tb_hospital` + `tb_district` | `MBRContains`로 뷰포트 필터 → `GROUP BY` 행정구역명 → `tb_district` JOIN으로 중심 좌표 획득 |
-| map (MARKER) | `tb_hospital` | `MBRContains`로 뷰포트 필터 → 개별 병원 좌표 목록 반환 (LIMIT 적용) |
-| list | `tb_hospital` + `tb_hospital_tag` | `sido_name` / `sigungu_name` / `dong_name` 컬럼 필터 |
+| map | `tb_hospital` | `MBRContains`로 뷰포트 필터 → `GROUP BY ROUND(lat, p), ROUND(lng, p)` |
+| list | `tb_hospital` + `tb_hospital_tag` | `ROUND(ST_Y(location), p) = lat AND ROUND(ST_X(location), p) = lng` |
 | detail | `tb_hospital` + `tb_hospital_tag` + `tb_hospital_equipment` | `hospital_id` 단건 조회 |
 
-### CLUSTER 모드 쿼리 예시 (SIGUNGU 단위)
+### 클러스터 쿼리 예시
 
 ```sql
-SELECT h.sigungu_name,
-       d.center_lat,
-       d.center_lng,
-       COUNT(*)        AS count
-FROM tb_hospital h
-JOIN tb_district d
-  ON d.level       = 'SIGUNGU'
- AND d.name        = h.sigungu_name
- AND d.parent_name = h.sido_name
-WHERE MBRContains(
-    ST_GeomFromText('POLYGON((swLng swLat, neLng swLat, neLng neLat, swLng neLat, swLng swLat))', 4326),
-    h.location
-)
-GROUP BY h.sigungu_name, d.center_lat, d.center_lng
-ORDER BY count DESC;
-```
-
-### MARKER 모드 쿼리 예시
-
-```sql
-SELECT hospital_id,
-       name,
-       ST_Y(location) AS lat,
-       ST_X(location) AS lng
+SELECT ROUND(ST_Y(location), #{precision}) AS lat,
+       ROUND(ST_X(location), #{precision}) AS lng,
+       COUNT(*)                             AS count
 FROM tb_hospital
 WHERE MBRContains(
     ST_GeomFromText('POLYGON((swLng swLat, neLng swLat, neLng neLat, swLng neLat, swLng swLat))', 4326),
     location
 )
-LIMIT 100;
+GROUP BY ROUND(ST_Y(location), #{precision}),
+         ROUND(ST_X(location), #{precision})
+ORDER BY count DESC;
+```
+
+### 목록 쿼리 예시
+
+```sql
+SELECT h.hospital_id, h.name, h.address, h.contact_number, h.contact_url,
+       GROUP_CONCAT(t.tag_name) AS tags
+FROM tb_hospital h
+LEFT JOIN tb_hospital_tag t ON t.hospital_id = h.hospital_id
+WHERE ROUND(ST_Y(h.location), #{precision}) = #{lat}
+  AND ROUND(ST_X(h.location), #{precision}) = #{lng}
+GROUP BY h.hospital_id;
 ```
 
 ---
@@ -309,8 +268,12 @@ LIMIT 100;
 
 | 항목 | 결정 | 이유 |
 |---|---|---|
-| 클러스터 방식 | 서버사이드 행정구역 기반 | 줌 레벨별 GROUP BY로 단순하고 빠름 |
-| 마커 겹침 처리 | 클라이언트 픽셀 기반 재클러스터링 | 겹침 여부는 픽셀 거리 기준이라 서버가 판단 불가 |
-| 중심 좌표 저장 | `tb_district` 별도 테이블 분리 | 병원 행마다 같은 좌표를 중복 저장하는 낭비 방지 |
-| 클러스터 클릭 동작 | 줌인 없이 하단 시트로 목록 표시 | Naver Land 방식, 줌인은 사용자가 직접 제어 |
-| MARKER 응답 LIMIT | 100건 | 뷰포트가 넓을 때 과부하 방지 |
+| 렌더링 방식 | 항상 숫자 클러스터, 핀(마커) 없음 | 같은 건물에 병원 여러 개인 경우 핀으로는 표현 불가 |
+| 클러스터 타입 구분 | 단일 방식 (좌표 반올림) | 버블에 지역 이름 표시 계획 없음 → DISTRICT/LOCATION 구분 불필요 |
+| 클러스터링 기준 | `ROUND(lat, precision), ROUND(lng, precision)` | 구현 단순, tb_district 테이블 불필요 |
+| 버블 클릭 동작 | 줌인 없이 하단 시트로 목록 표시 | 줌인은 사용자가 직접 제어 |
+| 목록 API 식별자 | `lat`, `lng`, `precision` | API 1 응답값을 그대로 전달하는 단순한 구조 |
+| tb_district 테이블 | 미사용 (제거) | 좌표 반올림 방식으로 대체되어 불필요 |
+
+> **향후 버블에 지역명(강남구, 역삼동 등) 표시가 필요해지면**
+> `tb_district` 테이블과 `sido_name`, `sigungu_name`, `dong_name` 컬럼 추가 및 DISTRICT 클러스터 타입 도입 검토

@@ -1,6 +1,7 @@
 # HEHE Backend
 
 _last update : 26.04.07_
+
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
 ---
@@ -56,12 +57,18 @@ _last update : 26.04.07_
 | POST | `/api/v1/schedules/{scheduleId}/alarms` | 알림 등록 |
 | DELETE | `/api/v1/schedules/{scheduleId}/alarms/{alarmType}` | 알림 삭제 |
 
+### Hospital
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/hospitals/map` | 지도 뷰포트 내 클러스터 조회 |
+| GET | `/api/v1/hospitals` | 클러스터 내 병원 목록 조회 |
+| GET | `/api/v1/hospitals/{hospitalId}` | 병원 상세 조회 |
+
 ---
 
 ## 미구현 (예정)
 
 - Auth / JWT (소셜 로그인, Refresh Token)
 - User (회원가입 · 탈퇴 · 정보 수정)
-- Hospital (지도 기반 병원 조회 · 검색 · 상세)
 - Bookmark (병원 찜하기)
 - FCM 푸시 알림

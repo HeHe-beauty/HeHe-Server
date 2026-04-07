@@ -17,15 +17,15 @@ import lombok.Setter;
 public class HospitalClusterRequest {
 
     @NotNull
-    @Schema(description = "클러스터 반올림 위도 (map API 응답값 그대로)", example = "37.50", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "클러스터 반올림 위도 (map API 응답값 그대로 사용)", example = "37.50", requiredMode = Schema.RequiredMode.REQUIRED)
     private Double lat;
 
     @NotNull
-    @Schema(description = "클러스터 반올림 경도 (map API 응답값 그대로)", example = "127.04", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "클러스터 반올림 경도 (map API 응답값 그대로 사용)", example = "127.04", requiredMode = Schema.RequiredMode.REQUIRED)
     private Double lng;
 
     @NotNull
-    @Schema(description = "좌표 반올림 자릿수 (map API 응답값 그대로, 1~4)", example = "2", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "좌표 반올림 자릿수 (map API 응답값 그대로 사용, 1~4)", example = "2", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer precision;
 
     @Schema(description = "장비 필터 ID (없으면 전체 병원 조회)", example = "1")

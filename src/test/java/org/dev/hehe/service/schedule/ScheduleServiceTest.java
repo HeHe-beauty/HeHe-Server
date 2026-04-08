@@ -400,6 +400,87 @@ class ScheduleServiceTest {
         verifyNoMoreInteractions(scheduleMapper);
     }
 
+    // =============================================
+    // getSchedulesByDate 테스트
+    // =============================================
+
+    @Test
+    @DisplayName("날짜별 일정 조회 성공 - 알림 포함")
+    void getSchedulesByDate_success_withAlarms() {
+        // given
+        String date = "2026-04-08";
+        long dayStart = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long visitTime = dayStart + 3600;
+
+        Schedule schedule = createSchedule(1001L, "강남 제모 클리닉", "겨드랑이 레이저 제모", visitTime, true);
+        ScheduleAlarm alarm = createAlarm(1001L, "1H", visitTime - 3600, false);
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of(schedule));
+        given(scheduleMapper.findAlarmsByScheduleIds(List.of(1001L)))
+                .willReturn(List.of(alarm));
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getSchedulesByDate(1L, date);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getScheduleId()).isEqualTo(1001L);
+        assertThat(result.get(0).getHospitalName()).isEqualTo("강남 제모 클리닉");
+        assertThat(result.get(0).getAlarms()).hasSize(1);
+        assertThat(result.get(0).getAlarms().get(0).getAlarmType()).isEqualTo("1H");
+    }
+
+    @Test
+    @DisplayName("날짜별 일정 조회 성공 - 해당 날짜 일정 없으면 빈 리스트 반환")
+    void getSchedulesByDate_empty() {
+        // given
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+                .willReturn(List.of());
+
+        // when
+        List<ScheduleResponse> result = scheduleService.getSchedulesByDate(1L, "2026-04-08");
+
+        // then: 일정이 없으면 알림 쿼리 미호출
+        assertThat(result).isEmpty();
+        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong());
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    @Test
+    @DisplayName("날짜별 일정 조회 - 조회 범위가 해당 날짜 00:00:00 ~ 다음 날 00:00:00 인지 검증")
+    void getSchedulesByDate_verifyTimeRange() {
+        // given
+        String date = "2026-04-08";
+        long expectedStart = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long expectedEnd   = LocalDate.parse(date).atStartOfDay(ZoneId.systemDefault()).plusDays(1).toEpochSecond();
+
+        given(scheduleMapper.findSchedulesByUserIdAndPeriod(anyLong(), anyLong(), anyLong()))
+                .willReturn(List.of());
+
+        // when
+        scheduleService.getSchedulesByDate(1L, date);
+
+        // then
+        ArgumentCaptor<Long> startCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Long> endCaptor   = ArgumentCaptor.forClass(Long.class);
+        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), startCaptor.capture(), endCaptor.capture());
+
+        assertThat(startCaptor.getValue()).isEqualTo(expectedStart);
+        assertThat(endCaptor.getValue()).isEqualTo(expectedEnd);
+    }
+
+    @Test
+    @DisplayName("날짜별 일정 조회 - 잘못된 날짜 형식이면 INVALID_INPUT 예외 발생")
+    void getSchedulesByDate_invalidDateFormat() {
+        // when & then
+        assertThatThrownBy(() -> scheduleService.getSchedulesByDate(1L, "2026/04/08"))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
+
+        verifyNoMoreInteractions(scheduleMapper);
+    }
+
     @Test
     @DisplayName("존재하지 않는 scheduleId 조회 시 SCHEDULE_NOT_FOUND 예외 발생")
     void getScheduleById_notFound() {

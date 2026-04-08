@@ -224,6 +224,85 @@ class ScheduleControllerTest {
     }
 
     // =============================================
+    // GET /api/v1/schedules/daily 테스트
+    // =============================================
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/daily - 정상 조회 성공")
+    void getSchedulesByDate_success() throws Exception {
+        // given
+        List<ScheduleResponse> mockSchedules = List.of(
+                ScheduleResponse.builder()
+                        .scheduleId(1001L)
+                        .hospitalName("강남 제모 클리닉")
+                        .procedureName("겨드랑이 레이저 제모")
+                        .visitTime(1744077600L)
+                        .alarmEnabled(true)
+                        .alarms(List.of(
+                                ScheduleAlarmResponse.builder()
+                                        .alarmType("1H")
+                                        .alarmTime(1744074000L)
+                                        .isSent(false)
+                                        .build()
+                        ))
+                        .build()
+        );
+        given(scheduleService.getSchedulesByDate(1L, "2026-04-08")).willReturn(mockSchedules);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/schedules/daily")
+                        .param("userId", "1")
+                        .param("date", "2026-04-08"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].scheduleId").value(1001))
+                .andExpect(jsonPath("$.data[0].hospitalName").value("강남 제모 클리닉"))
+                .andExpect(jsonPath("$.data[0].alarms[0].alarmType").value("1H"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/daily - 해당 날짜 일정 없을 때 빈 배열 반환")
+    void getSchedulesByDate_emptyList() throws Exception {
+        // given
+        given(scheduleService.getSchedulesByDate(1L, "2026-04-08")).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/schedules/daily")
+                        .param("userId", "1")
+                        .param("date", "2026-04-08"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/daily - userId 누락 시 400 반환")
+    void getSchedulesByDate_missingUserId() throws Exception {
+        mockMvc.perform(get("/api/v1/schedules/daily")
+                        .param("date", "2026-04-08"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("C002"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/daily - date 누락 시 400 반환")
+    void getSchedulesByDate_missingDate() throws Exception {
+        mockMvc.perform(get("/api/v1/schedules/daily")
+                        .param("userId", "1"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("C002"));
+    }
+
+    // =============================================
     // PATCH /api/v1/schedules/{scheduleId} 테스트
     // =============================================
 

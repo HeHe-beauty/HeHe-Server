@@ -6,11 +6,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.dev.hehe.common.response.ApiResponse;
 import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
 import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
+import org.dev.hehe.dto.schedule.ScheduleDailyRequest;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,6 +70,49 @@ public interface ScheduleApiSpecification {
     ApiResponse<ScheduleResponse> getSchedule(
             @Parameter(description = "조회할 일정 ID", required = true) @PathVariable Long scheduleId
     );
+
+    @Operation(
+            summary = "날짜별 일정 목록 조회",
+            description = """
+                    특정 날짜의 일정 목록을 반환합니다. (해당 날짜 00:00:00 ~ 23:59:59)
+                    visit_time은 Unix timestamp(seconds)로 반환되며, 시간대 전환은 클라이언트에서 처리합니다.
+
+                    TODO: Auth 구현 후 userId 파라미터 제거 예정 (JWT에서 자동 추출)
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": [
+                                        {
+                                          "scheduleId": 1001,
+                                          "hospitalName": "강남 제모 클리닉",
+                                          "procedureName": "겨드랑이 레이저 제모",
+                                          "visitTime": 1744077600,
+                                          "alarmEnabled": true,
+                                          "alarms": [
+                                            { "alarmType": "1H", "alarmTime": 1744074000, "isSent": false }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                    """))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "필수 파라미터 누락 또는 날짜 형식 오류",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    { "success": false, "errorCode": "C002", "message": "잘못된 요청 값입니다." }
+                                    """))
+            )
+    })
+    ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@ParameterObject @Valid ScheduleDailyRequest request);
 
     @Operation(
             summary = "홈 화면 7일 일정 조회",

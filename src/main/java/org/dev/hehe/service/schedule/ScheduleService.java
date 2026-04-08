@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -107,6 +108,62 @@ public class ScheduleService {
                 .toList();
 
         log.debug("7일 일정 조회 완료 - userId={}, count={}", userId, result.size());
+        return result;
+    }
+
+    /**
+     * 특정 날짜의 일정 목록 조회 (알림 정보 포함)
+     *
+     * <p>조회 범위: 입력 날짜 00:00:00 (포함) ~ 다음 날 00:00:00 (미포함)</p>
+     * <p>visit_time은 Unix timestamp(seconds) 그대로 반환. 시간대 전환은 FE에서 처리.</p>
+     * <p>알림은 schedule_id IN (...) 단일 쿼리로 일괄 조회하여 N+1 방지.</p>
+     *
+     * <p>TODO: Auth 구현 후 userId를 JWT SecurityContext에서 추출하도록 변경</p>
+     *
+     * @param userId 조회할 유저 ID
+     * @param date   조회할 날짜 문자열 (yyyy-MM-dd)
+     * @return 해당 날짜의 일정 목록 (visit_time ASC, 각 일정에 알림 목록 포함)
+     * @throws CommonException INVALID_INPUT — 날짜 형식이 잘못된 경우
+     */
+    public List<ScheduleResponse> getSchedulesByDate(Long userId, String date) {
+        LocalDate localDate;
+        try {
+            localDate = LocalDate.parse(date);
+        } catch (DateTimeParseException e) {
+            log.warn("날짜 형식 오류 - date={}", date);
+            throw new CommonException(ErrorCode.INVALID_INPUT);
+        }
+
+        ZonedDateTime dayStart = localDate.atStartOfDay(ZoneId.systemDefault());
+        long startTime = dayStart.toEpochSecond();
+        long endTime   = dayStart.plusDays(1).toEpochSecond();
+
+        log.debug("날짜별 일정 조회 - userId={}, date={}, startTime={}, endTime={}", userId, date, startTime, endTime);
+
+        List<Schedule> schedules = scheduleMapper.findSchedulesByUserIdAndPeriod(userId, startTime, endTime);
+
+        if (schedules.isEmpty()) {
+            log.debug("해당 날짜 일정 없음 - userId={}, date={}", userId, date);
+            return List.of();
+        }
+
+        List<Long> scheduleIds = schedules.stream()
+                .map(Schedule::getScheduleId)
+                .toList();
+
+        Map<Long, List<ScheduleAlarmResponse>> alarmMap = scheduleMapper
+                .findAlarmsByScheduleIds(scheduleIds)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        ScheduleAlarm::getScheduleId,
+                        Collectors.mapping(ScheduleAlarmResponse::from, Collectors.toList())
+                ));
+
+        List<ScheduleResponse> result = schedules.stream()
+                .map(s -> ScheduleResponse.of(s, alarmMap.getOrDefault(s.getScheduleId(), List.of())))
+                .toList();
+
+        log.debug("날짜별 일정 조회 완료 - userId={}, date={}, count={}", userId, date, result.size());
         return result;
     }
 

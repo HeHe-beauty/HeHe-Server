@@ -2,9 +2,11 @@ package org.dev.hehe.controller.schedule;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.validation.Valid;
 import org.dev.hehe.common.response.ApiResponse;
 import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
 import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
+import org.dev.hehe.dto.schedule.ScheduleDailyRequest;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
 import org.dev.hehe.service.schedule.ScheduleService;
@@ -45,9 +47,23 @@ public class ScheduleController implements ScheduleApiSpecification {
     }
 
     /**
-     * 홈 화면 7일 일정 조회
-     * TODO: Auth 구현 후 @RequestParam userId 제거, JWT SecurityContext에서 userId 추출로 변경
+     * 날짜별 일정 목록 조회
+     * TODO: Auth 구현 후 request.getUserId() 제거, JWT SecurityContext에서 userId 추출로 변경
      */
+    @Override
+    @GetMapping("/daily")
+    public ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@Valid ScheduleDailyRequest request) {
+        log.info("[GET] /api/v1/schedules/daily - userId={}, date={}", request.getUserId(), request.getDate());
+        List<ScheduleResponse> schedules = scheduleService.getSchedulesByDate(request.getUserId(), request.getDate());
+        log.info("날짜별 일정 조회 완료 - userId={}, date={}, count={}", request.getUserId(), request.getDate(), schedules.size());
+        return ApiResponse.ok(schedules);
+    }
+
+    /**
+     * 홈 화면 7일 일정 조회
+     * TODO: 사용하지 않는 API. 삭제 예정
+     */
+    @Deprecated
     @Override
     @GetMapping("/upcoming")
     public ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(@RequestParam Long userId) {

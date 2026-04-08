@@ -25,6 +25,21 @@ _last update : 26.04.07_
 - 기본 포트: `8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
+
+## 접속 방법
+```
+
+# SSH 접속
+ssh -i your-key.pem ec2-user@{ELASTIC_IP}
+
+# Swagger UI
+http://{ELASTIC_IP}:8080/swagger-ui.html
+
+# API 호출 예시
+http://{ELASTIC_IP}:8080/api/v1/common/time
+```
+
+
 ---
 
 ## 구현된 API

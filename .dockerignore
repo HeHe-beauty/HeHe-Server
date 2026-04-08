@@ -1,0 +1,8 @@
+.gradle
+build
+.git
+.gitignore
+CLAUDE.md
+docs/
+*.md
+src/test/

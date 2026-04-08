@@ -40,3 +40,4 @@ out/
 CLAUDE.md
 application-local.yml
 docs
+mysql_data

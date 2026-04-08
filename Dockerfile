@@ -1,7 +1,7 @@
 # =============================================
 # 1단계: Gradle 빌드
 # =============================================
-FROM gradle:8.5-jdk17-alpine AS build
+FROM --platform=linux/amd64 gradle:8.5-jdk17-alpine AS build
 WORKDIR /app
 
 # 의존성 캐시를 위해 gradle 파일 먼저 복사
@@ -16,7 +16,7 @@ RUN gradle bootJar --no-daemon -x test
 # =============================================
 # 2단계: 실행 이미지 (경량)
 # =============================================
-FROM amazoncorretto:17-alpine
+FROM --platform=linux/amd64 amazoncorretto:17-alpine
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*.jar app.jar

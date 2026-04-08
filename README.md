@@ -64,7 +64,6 @@ http://{ELASTIC_IP}:8080/api/v1/common/time
 ### Schedule
 | Method | Endpoint | 설명 |
 |---|---|---|
-| GET | `/api/v1/schedules/upcoming` | 7일간 예약 일정 조회 |
 | GET | `/api/v1/schedules/daily` | 날짜별 예약 일정 조회 |
 | POST | `/api/v1/schedules` | 예약 일정 생성 |
 | GET | `/api/v1/schedules/{scheduleId}` | 예약 일정 단건 조회 |

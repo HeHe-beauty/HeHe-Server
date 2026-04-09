@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 전역 예외 처리 핸들러
@@ -55,6 +56,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
                 .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, e.getParameterName() + " 파라미터가 필요합니다."));
+    }
+
+    /**
+     * 존재하지 않는 정적 리소스 또는 경로 요청 처리 (404)
+     * 봇 스캐닝 트래픽 등 외부 요청이 주요 원인이므로 WARN 수준으로만 기록
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException e) {
+        log.warn("No resource found - {}", e.getResourcePath());
+        return ResponseEntity
+                .status(404)
+                .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, "요청한 리소스를 찾을 수 없습니다."));
     }
 
     /**

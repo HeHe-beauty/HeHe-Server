@@ -39,5 +39,5 @@ out/
 ### Project ###
 CLAUDE.md
 application-local.yml
-docs/
-mysql_data/
+/mysql_data/
+/docs/

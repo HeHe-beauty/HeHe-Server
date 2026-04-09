@@ -13,10 +13,10 @@ import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
 import org.dev.hehe.dto.schedule.ScheduleDailyRequest;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
+import org.dev.hehe.dto.schedule.ScheduleUpcomingRequest;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -115,9 +115,9 @@ public interface ScheduleApiSpecification {
     ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@ParameterObject @Valid ScheduleDailyRequest request);
 
     @Operation(
-            summary = "홈 화면 7일 일정 조회",
+            summary = "예정 일정 N건 조회",
             description = """
-                    오늘(서버 기준 00:00:00)부터 7일간의 일정 목록을 반환합니다.
+                    현재 시각 이후의 예정 일정을 visit_time 오름차순(가까운 순)으로 N건 반환합니다.
                     visit_time은 Unix timestamp(seconds)로 반환되며, 시간대 전환은 클라이언트에서 처리합니다.
 
                     TODO: Auth 구현 후 userId 파라미터 제거 예정 (JWT에서 자동 추출)
@@ -155,7 +155,7 @@ public interface ScheduleApiSpecification {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "userId 파라미터 누락",
+                    description = "필수 파라미터 누락 또는 limit < 1",
                     content = @Content(mediaType = "application/json",
                             examples = @ExampleObject(value = """
                                     {
@@ -167,8 +167,7 @@ public interface ScheduleApiSpecification {
             )
     })
     ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(
-            @Parameter(description = "조회할 유저 ID (TODO: Auth 구현 후 제거)", required = true)
-            @RequestParam Long userId
+            @ParameterObject @Valid ScheduleUpcomingRequest request
     );
 
     @Operation(

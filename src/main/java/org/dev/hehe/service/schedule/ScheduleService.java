@@ -60,29 +60,27 @@ public class ScheduleService {
     }
 
     /**
-     * 오늘부터 7일간 일정 목록 조회 (알림 정보 포함)
+     * 현재 시각 이후 예정 일정을 가까운 순으로 N건 조회 (알림 정보 포함)
      *
-     * <p>조회 범위: 오늘 00:00:00 (포함) ~ 오늘 + 7일 00:00:00 (미포함)</p>
+     * <p>visit_time >= 현재 시각인 일정을 visit_time ASC로 정렬하여 limit 개 반환.</p>
      * <p>visit_time은 Unix timestamp(seconds) 그대로 반환. 시간대 전환은 FE에서 처리.</p>
      * <p>알림은 schedule_id IN (...) 단일 쿼리로 일괄 조회하여 N+1 방지.</p>
      *
      * <p>TODO: Auth 구현 후 userId를 JWT SecurityContext에서 추출하도록 변경</p>
      *
      * @param userId 조회할 유저 ID
-     * @return 7일간 일정 목록 (visit_time ASC, 각 일정에 알림 목록 포함)
+     * @param limit  조회할 최대 건수 (1 이상)
+     * @return 예정 일정 목록 (visit_time ASC, 각 일정에 알림 목록 포함)
      */
-    public List<ScheduleResponse> getUpcomingSchedules(Long userId) {
-        // 조회 범위: 오늘 00:00:00 (포함) ~ 오늘 + 7일 00:00:00 (미포함)
-        ZonedDateTime todayStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault());
-        long startTime = todayStart.toEpochSecond();
-        long endTime   = todayStart.plusDays(7).toEpochSecond();
+    public List<ScheduleResponse> getUpcomingSchedules(Long userId, int limit) {
+        long nowTime = ZonedDateTime.now(ZoneId.systemDefault()).toEpochSecond();
 
-        log.debug("7일 일정 조회 - userId={}, startTime={}, endTime={}", userId, startTime, endTime);
+        log.debug("예정 일정 조회 - userId={}, nowTime={}, limit={}", userId, nowTime, limit);
 
-        List<Schedule> schedules = scheduleMapper.findSchedulesByUserIdAndPeriod(userId, startTime, endTime);
+        List<Schedule> schedules = scheduleMapper.findUpcomingSchedulesByUserId(userId, nowTime, limit);
 
         if (schedules.isEmpty()) {
-            log.debug("7일 일정 없음 - userId={}", userId);
+            log.debug("예정 일정 없음 - userId={}", userId);
             return List.of();
         }
 
@@ -91,7 +89,6 @@ public class ScheduleService {
                 .map(Schedule::getScheduleId)
                 .toList();
 
-        // IN 절 활용해서 일괄 조회
         Map<Long, List<ScheduleAlarmResponse>> alarmMap = scheduleMapper
                 .findAlarmsByScheduleIds(scheduleIds)
                 .stream()
@@ -107,7 +104,7 @@ public class ScheduleService {
                 ))
                 .toList();
 
-        log.debug("7일 일정 조회 완료 - userId={}, count={}", userId, result.size());
+        log.debug("예정 일정 조회 완료 - userId={}, count={}", userId, result.size());
         return result;
     }
 

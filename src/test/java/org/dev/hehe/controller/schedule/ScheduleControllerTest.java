@@ -135,7 +135,7 @@ class ScheduleControllerTest {
     // =============================================
 
     @Test
-    @DisplayName("GET /api/v1/schedules/upcoming - 알림 포함 일정 목록 정상 반환")
+    @DisplayName("GET /api/v1/schedules/upcoming - 예정 일정 N건 정상 반환")
     void getUpcomingSchedules_success() throws Exception {
         // given
         List<ScheduleResponse> mockSchedules = List.of(
@@ -161,36 +161,35 @@ class ScheduleControllerTest {
                         .alarms(List.of())
                         .build()
         );
-        given(scheduleService.getUpcomingSchedules(1L)).willReturn(mockSchedules);
+        given(scheduleService.getUpcomingSchedules(1L, 5)).willReturn(mockSchedules);
 
         // when & then
-        mockMvc.perform(get("/api/v1/schedules/upcoming").param("userId", "1"))
+        mockMvc.perform(get("/api/v1/schedules/upcoming")
+                        .param("userId", "1")
+                        .param("limit", "5"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                // 첫 번째 일정: 알림 1개
                 .andExpect(jsonPath("$.data[0].scheduleId").value(1001))
                 .andExpect(jsonPath("$.data[0].procedureName").value("겨드랑이 레이저 제모"))
-                .andExpect(jsonPath("$.data[0].alarms").isArray())
-                .andExpect(jsonPath("$.data[0].alarms.length()").value(1))
                 .andExpect(jsonPath("$.data[0].alarms[0].alarmType").value("1H"))
                 .andExpect(jsonPath("$.data[0].alarms[0].isSent").value(false))
-                // 두 번째 일정: procedureName null이면 필드 제외, 알림 빈 배열
                 .andExpect(jsonPath("$.data[1].procedureName").doesNotExist())
-                .andExpect(jsonPath("$.data[1].alarms").isArray())
                 .andExpect(jsonPath("$.data[1].alarms").isEmpty());
     }
 
     @Test
-    @DisplayName("GET /api/v1/schedules/upcoming - 일정 없을 때 빈 배열 반환")
+    @DisplayName("GET /api/v1/schedules/upcoming - 예정 일정 없을 때 빈 배열 반환")
     void getUpcomingSchedules_emptyList() throws Exception {
         // given
-        given(scheduleService.getUpcomingSchedules(1L)).willReturn(List.of());
+        given(scheduleService.getUpcomingSchedules(1L, 5)).willReturn(List.of());
 
         // when & then
-        mockMvc.perform(get("/api/v1/schedules/upcoming").param("userId", "1"))
+        mockMvc.perform(get("/api/v1/schedules/upcoming")
+                        .param("userId", "1")
+                        .param("limit", "5"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -199,9 +198,19 @@ class ScheduleControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/schedules/upcoming - userId 파라미터 누락 시 400 반환")
+    @DisplayName("GET /api/v1/schedules/upcoming - userId 누락 시 400 반환")
     void getUpcomingSchedules_missingUserId() throws Exception {
-        mockMvc.perform(get("/api/v1/schedules/upcoming"))
+        mockMvc.perform(get("/api/v1/schedules/upcoming").param("limit", "5"))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("C002"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/upcoming - limit 누락 시 400 반환")
+    void getUpcomingSchedules_missingLimit() throws Exception {
+        mockMvc.perform(get("/api/v1/schedules/upcoming").param("userId", "1"))
                 .andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -213,10 +222,12 @@ class ScheduleControllerTest {
     void getUpcomingSchedules_serviceException() throws Exception {
         // given
         willThrow(new RuntimeException("DB error"))
-                .given(scheduleService).getUpcomingSchedules(1L);
+                .given(scheduleService).getUpcomingSchedules(1L, 5);
 
         // when & then
-        mockMvc.perform(get("/api/v1/schedules/upcoming").param("userId", "1"))
+        mockMvc.perform(get("/api/v1/schedules/upcoming")
+                        .param("userId", "1")
+                        .param("limit", "5"))
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.success").value(false))

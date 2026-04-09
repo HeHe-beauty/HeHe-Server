@@ -9,6 +9,7 @@ import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
 import org.dev.hehe.dto.schedule.ScheduleDailyRequest;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
+import org.dev.hehe.dto.schedule.ScheduleUpcomingRequest;
 import org.dev.hehe.service.schedule.ScheduleService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,16 +60,15 @@ public class ScheduleController implements ScheduleApiSpecification {
     }
 
     /**
-     * 홈 화면 7일 일정 조회
-     * TODO: 사용하지 않는 API. 삭제 예정
+     * 예정 일정 N건 조회 (현재 시각 이후, visit_time ASC)
+     * TODO: Auth 구현 후 request.getUserId() 제거, JWT SecurityContext에서 userId 추출로 변경
      */
-    @Deprecated
     @Override
     @GetMapping("/upcoming")
-    public ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(@RequestParam Long userId) {
-        log.info("[GET] /api/v1/schedules/upcoming - userId={}", userId);
-        List<ScheduleResponse> schedules = scheduleService.getUpcomingSchedules(userId);
-        log.info("7일 일정 조회 완료 - userId={}, count={}", userId, schedules.size());
+    public ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(@Valid ScheduleUpcomingRequest request) {
+        log.info("[GET] /api/v1/schedules/upcoming - userId={}, limit={}", request.getUserId(), request.getLimit());
+        List<ScheduleResponse> schedules = scheduleService.getUpcomingSchedules(request.getUserId(), request.getLimit());
+        log.info("예정 일정 조회 완료 - userId={}, limit={}, count={}", request.getUserId(), request.getLimit(), schedules.size());
         return ApiResponse.ok(schedules);
     }
 

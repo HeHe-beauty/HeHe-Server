@@ -55,6 +55,29 @@ public interface ScheduleMapper {
                                                   @Param("endTime") long endTime);
 
     /**
+     * 특정 유저의 예정 일정을 visit_time 오름차순으로 N건 조회
+     *
+     * <p>현재 시각(nowTime) 이후의 일정만 조회하며, 가장 가까운 순서대로 limit 개를 반환한다.</p>
+     *
+     * @param userId  조회할 유저 ID
+     * @param nowTime 현재 시각 (Unix timestamp, 포함)
+     * @param limit   조회할 최대 건수
+     * @return 예정 일정 목록 (visit_time ASC)
+     */
+    @Select("""
+            SELECT schedule_id, user_id, hospital_name, procedure_name,
+                   visit_time, alarm_enabled, created_at, updated_at
+            FROM tb_schedule
+            WHERE user_id   = #{userId}
+              AND visit_time >= #{nowTime}
+            ORDER BY visit_time ASC
+            LIMIT #{limit}
+            """)
+    List<Schedule> findUpcomingSchedulesByUserId(@Param("userId") Long userId,
+                                                 @Param("nowTime") long nowTime,
+                                                 @Param("limit") int limit);
+
+    /**
      * 복수 schedule_id에 해당하는 알림 목록 일괄 조회 (alarm_time ASC)
      * N+1 방지를 위해 IN 절로 한 번에 조회
      *

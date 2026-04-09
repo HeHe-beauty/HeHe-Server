@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -81,22 +82,23 @@ class ScheduleServiceTest {
     }
 
     @Test
-    @DisplayName("7일 일정 조회 성공 - 알림 포함")
+    @DisplayName("예정 일정 N건 조회 성공 - 알림 포함")
     void getUpcomingSchedules_success_withAlarms() {
         // given
-        long visitTime = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() + 3600;
+        long visitTime = ZoneId.systemDefault().getRules().getOffset(java.time.Instant.now()).getTotalSeconds()
+                + System.currentTimeMillis() / 1000 + 3600;
         Schedule schedule = createSchedule(1001L, "강남 제모 클리닉", "겨드랑이 레이저 제모", visitTime, true);
 
         ScheduleAlarm alarm1 = createAlarm(1001L, "1H", visitTime - 3600, false);
         ScheduleAlarm alarm2 = createAlarm(1001L, "1D", visitTime - 86400, false);
 
-        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+        given(scheduleMapper.findUpcomingSchedulesByUserId(eq(1L), anyLong(), eq(5)))
                 .willReturn(List.of(schedule));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(1001L)))
                 .willReturn(List.of(alarm1, alarm2));
 
         // when
-        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L, 5);
 
         // then
         assertThat(result).hasSize(1);
@@ -109,19 +111,19 @@ class ScheduleServiceTest {
     }
 
     @Test
-    @DisplayName("7일 일정 조회 성공 - 알림 없는 일정 (빈 리스트)")
+    @DisplayName("예정 일정 N건 조회 성공 - 알림 없는 일정 (빈 리스트)")
     void getUpcomingSchedules_success_noAlarms() {
         // given
-        long visitTime = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() + 7200;
+        long visitTime = System.currentTimeMillis() / 1000 + 7200;
         Schedule schedule = createSchedule(1002L, "홍대 스킨케어", null, visitTime, false);
 
-        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+        given(scheduleMapper.findUpcomingSchedulesByUserId(eq(1L), anyLong(), eq(3)))
                 .willReturn(List.of(schedule));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(1002L)))
                 .willReturn(List.of());
 
         // when
-        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L, 3);
 
         // then
         assertThat(result).hasSize(1);
@@ -130,18 +132,18 @@ class ScheduleServiceTest {
     }
 
     @Test
-    @DisplayName("7일 일정 없을 때 빈 리스트 반환 — findAlarmsByScheduleIds 호출 없음")
+    @DisplayName("예정 일정 없을 때 빈 리스트 반환 — findAlarmsByScheduleIds 호출 없음")
     void getUpcomingSchedules_emptySchedules_noAlarmQuery() {
         // given
-        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+        given(scheduleMapper.findUpcomingSchedulesByUserId(eq(1L), anyLong(), eq(5)))
                 .willReturn(List.of());
 
         // when
-        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L, 5);
 
         // then: 일정이 없으면 알림 쿼리는 실행되면 안 됨 (IN () 방지)
         assertThat(result).isEmpty();
-        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong());
+        verify(scheduleMapper).findUpcomingSchedulesByUserId(eq(1L), anyLong(), eq(5));
         verifyNoMoreInteractions(scheduleMapper);
     }
 
@@ -149,49 +151,48 @@ class ScheduleServiceTest {
     @DisplayName("복수 일정 조회 시 각 일정의 알림이 올바르게 매핑되는지 검증")
     void getUpcomingSchedules_multipleSchedules_alarmGroupingCorrect() {
         // given: 일정 2개, 각각 알림 다르게 설정
-        long base = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long base = System.currentTimeMillis() / 1000;
         Schedule s1 = createSchedule(1001L, "강남 클리닉", null, base + 3600, true);
         Schedule s2 = createSchedule(1002L, "홍대 클리닉", null, base + 7200, true);
 
         ScheduleAlarm a1 = createAlarm(1001L, "1H", base, false);
-        ScheduleAlarm a2 = createAlarm(1002L, "3H", base, false);
+        ScheduleAlarm a2 = createAlarm(1002L, "3D", base, false);
 
-        given(scheduleMapper.findSchedulesByUserIdAndPeriod(eq(1L), anyLong(), anyLong()))
+        given(scheduleMapper.findUpcomingSchedulesByUserId(eq(1L), anyLong(), eq(5)))
                 .willReturn(List.of(s1, s2));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(1001L, 1002L)))
                 .willReturn(List.of(a1, a2));
 
         // when
-        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L);
+        List<ScheduleResponse> result = scheduleService.getUpcomingSchedules(1L, 5);
 
         // then: 각 일정에 해당하는 알림만 포함되는지 확인
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getAlarms()).hasSize(1);
         assertThat(result.get(0).getAlarms().get(0).getAlarmType()).isEqualTo("1H");
         assertThat(result.get(1).getAlarms()).hasSize(1);
-        assertThat(result.get(1).getAlarms().get(0).getAlarmType()).isEqualTo("3H");
+        assertThat(result.get(1).getAlarms().get(0).getAlarmType()).isEqualTo("3D");
     }
 
     @Test
-    @DisplayName("조회 범위가 오늘 00:00:00 ~ +7일 00:00:00 인지 검증")
-    void getUpcomingSchedules_verifyTimeRange() {
+    @DisplayName("nowTime 이 현재 시각으로 전달되는지 검증")
+    void getUpcomingSchedules_verifyNowTime() {
         // given
-        long expectedStart = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
-        long expectedEnd   = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).plusDays(7).toEpochSecond();
+        long beforeCall = System.currentTimeMillis() / 1000;
 
-        given(scheduleMapper.findSchedulesByUserIdAndPeriod(anyLong(), anyLong(), anyLong()))
+        given(scheduleMapper.findUpcomingSchedulesByUserId(anyLong(), anyLong(), anyInt()))
                 .willReturn(List.of());
 
         // when
-        scheduleService.getUpcomingSchedules(1L);
+        scheduleService.getUpcomingSchedules(1L, 5);
 
-        // then
-        ArgumentCaptor<Long> startCaptor = ArgumentCaptor.forClass(Long.class);
-        ArgumentCaptor<Long> endCaptor   = ArgumentCaptor.forClass(Long.class);
-        verify(scheduleMapper).findSchedulesByUserIdAndPeriod(eq(1L), startCaptor.capture(), endCaptor.capture());
+        long afterCall = System.currentTimeMillis() / 1000;
 
-        assertThat(startCaptor.getValue()).isEqualTo(expectedStart);
-        assertThat(endCaptor.getValue()).isEqualTo(expectedEnd);
+        // then: nowTime이 호출 전후 사이의 값인지 확인
+        ArgumentCaptor<Long> nowCaptor = ArgumentCaptor.forClass(Long.class);
+        verify(scheduleMapper).findUpcomingSchedulesByUserId(eq(1L), nowCaptor.capture(), eq(5));
+
+        assertThat(nowCaptor.getValue()).isBetween(beforeCall, afterCall + 1);
     }
 
     @Test
@@ -199,10 +200,10 @@ class ScheduleServiceTest {
     void getUpcomingSchedules_mapperThrowsException() {
         // given
         willThrow(new RuntimeException("DB connection error"))
-                .given(scheduleMapper).findSchedulesByUserIdAndPeriod(anyLong(), anyLong(), anyLong());
+                .given(scheduleMapper).findUpcomingSchedulesByUserId(anyLong(), anyLong(), anyInt());
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.getUpcomingSchedules(1L))
+        assertThatThrownBy(() -> scheduleService.getUpcomingSchedules(1L, 5))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("DB connection error");
     }

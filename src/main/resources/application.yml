@@ -19,3 +19,8 @@ springdoc:
     operations-sorter: alpha       # 메서드 알파벳 정렬
   api-docs:
     path: /v3/api-docs
+
+logging:
+  level:
+    # 봇이 HTTP 포트에 HTTPS(TLS) 요청을 보낼 때 발생하는 Tomcat 파싱 오류 억제
+    org.apache.coyote.http11: WARN

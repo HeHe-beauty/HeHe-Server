@@ -41,3 +41,4 @@ CLAUDE.md
 application-local.yml
 /mysql_data/
 /docs/
+scripts/.env

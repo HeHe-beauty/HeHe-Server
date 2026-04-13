@@ -15,10 +15,11 @@ load_dotenv()
 API_KEY = os.getenv("PUBLIC_DATA_API_KEY")
 BASE_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList"
 
-# 수집 대상: 서울(110000) × 피부과(D007) + 성형외과(D009)
+# 수집 대상: 서울(110000) × 피부과(14) + 성형외과(08)
+# dgsbjtCd 코드: 14=피부과, 08=성형외과 (공공데이터 심평원 API 기준)
 TARGETS = [
-    {"sidoCd": "110000", "dgsbjtCd": "D007", "label": "서울_피부과"},
-    {"sidoCd": "110000", "dgsbjtCd": "D009", "label": "서울_성형외과"},
+    {"sidoCd": "110000", "dgsbjtCd": "14", "label": "서울_피부과"},
+    {"sidoCd": "110000", "dgsbjtCd": "08", "label": "서울_성형외과"},
 ]
 
 NUM_OF_ROWS = 1000  # 페이지당 최대 1000건
@@ -79,17 +80,19 @@ def main():
     df = pd.DataFrame(all_hospitals)
 
     # 필요한 컬럼만 추출
+    # 응답 필드명: XPos(경도/longitude), YPos(위도/latitude) — 대문자 P (실제 API 응답 기준)
     keep_cols = [
         "ykiho",      # 요양기관기호 (고유 ID)
         "yadmNm",     # 병원명
         "addr",       # 주소
         "telno",      # 전화번호
-        "XPos",       # 경도 (longitude)
+        "XPos",       # 경도 (longitude) — DB 적재 시 POINT(YPos XPos) 순서 주의
         "YPos",       # 위도 (latitude)
-        "clCd",       # 종별코드
+        "clCd",       # 종별코드 (31=의원, 21=병원 등)
         "clCdNm",     # 종별코드명
-        "dgsbjtCd",   # 진료과목코드
+        "dgsbjtCd",   # 진료과목코드 (14=피부과, 08=성형외과)
         "dgsbjtCdNm", # 진료과목명
+        "hospUrl",    # 병원 홈페이지 URL → tb_hospital.contact_url 에 활용
         "_source_label",
     ]
     existing_cols = [c for c in keep_cols if c in df.columns]

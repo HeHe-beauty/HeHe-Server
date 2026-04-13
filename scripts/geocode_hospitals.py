@@ -41,6 +41,7 @@ def main():
         return
 
     df = pd.read_csv(input_path, dtype=str)
+    # 심평원 API 응답 필드명: XPos(경도/longitude), YPos(위도/latitude) — 대문자 P
     df["XPos"] = pd.to_numeric(df.get("XPos", None), errors="coerce")
     df["YPos"] = pd.to_numeric(df.get("YPos", None), errors="coerce")
 
@@ -60,8 +61,8 @@ def main():
 
         lat, lng = geocode(addr)
         if lat is not None:
-            df.at[idx, "YPos"] = lat
-            df.at[idx, "XPos"] = lng
+            df.at[idx, "YPos"] = lat  # YPos = 위도
+            df.at[idx, "XPos"] = lng  # XPos = 경도
             success += 1
         else:
             fail_list.append(idx)

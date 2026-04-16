@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * ScheduleService.createSchedule() 단위 테스트
+ * - userId는 컨트롤러에서 JWT로 추출하여 서비스에 전달
  * - 알림 등록은 별도 알림 API에서 처리되므로 createSchedule 에서 테스트하지 않음
  */
 @ExtendWith(MockitoExtension.class)
@@ -38,11 +39,11 @@ class ScheduleCreateServiceTest {
     @InjectMocks
     private ScheduleService scheduleService;
 
-    /** ScheduleCreateRequest 생성 헬퍼 */
-    private ScheduleCreateRequest createRequest(Long userId, String hospitalName,
-                                                String procedureName, Long visitTime) {
+    private static final Long TEST_USER_ID = 1L;
+
+    /** ScheduleCreateRequest 생성 헬퍼 (userId 제외) */
+    private ScheduleCreateRequest createRequest(String hospitalName, String procedureName, Long visitTime) {
         ScheduleCreateRequest req = new ScheduleCreateRequest();
-        ReflectionTestUtils.setField(req, "userId", userId);
         ReflectionTestUtils.setField(req, "hospitalName", hospitalName);
         ReflectionTestUtils.setField(req, "procedureName", procedureName);
         ReflectionTestUtils.setField(req, "visitTime", visitTime);
@@ -53,10 +54,10 @@ class ScheduleCreateServiceTest {
     @DisplayName("일정 생성 성공 - scheduleId 반환")
     void createSchedule_success() {
         // given
-        ScheduleCreateRequest request = createRequest(1L, "강남 제모 클리닉", null, 1741680000L);
+        ScheduleCreateRequest request = createRequest("강남 제모 클리닉", null, 1741680000L);
 
         // when
-        ScheduleCreateResponse response = scheduleService.createSchedule(request);
+        ScheduleCreateResponse response = scheduleService.createSchedule(TEST_USER_ID, request);
 
         // then
         assertThat(response.getScheduleId()).isNotNull();
@@ -69,10 +70,10 @@ class ScheduleCreateServiceTest {
     @DisplayName("alarmEnabled 는 항상 true 로 저장")
     void createSchedule_alarmEnabled_alwaysTrue() {
         // given
-        ScheduleCreateRequest request = createRequest(1L, "강남 클리닉", null, 1741680000L);
+        ScheduleCreateRequest request = createRequest("강남 클리닉", null, 1741680000L);
 
         // when
-        scheduleService.createSchedule(request);
+        scheduleService.createSchedule(TEST_USER_ID, request);
 
         // then: insertSchedule 의 alarmEnabled 파라미터가 항상 true 인지 확인
         ArgumentCaptor<Boolean> alarmEnabledCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -85,10 +86,10 @@ class ScheduleCreateServiceTest {
     @DisplayName("시술명 포함 일정 생성 성공")
     void createSchedule_success_withProcedureName() {
         // given
-        ScheduleCreateRequest request = createRequest(1L, "강남 클리닉", "겨드랑이 레이저 제모", 1741680000L);
+        ScheduleCreateRequest request = createRequest("강남 클리닉", "겨드랑이 레이저 제모", 1741680000L);
 
         // when
-        ScheduleCreateResponse response = scheduleService.createSchedule(request);
+        ScheduleCreateResponse response = scheduleService.createSchedule(TEST_USER_ID, request);
 
         // then
         assertThat(response.getScheduleId()).isNotNull();
@@ -96,21 +97,11 @@ class ScheduleCreateServiceTest {
     }
 
     @Test
-    @DisplayName("userId 누락 시 INVALID_INPUT 예외 발생")
-    void createSchedule_fail_missingUserId() {
-        ScheduleCreateRequest request = createRequest(null, "강남 클리닉", null, 1741680000L);
-
-        assertThatThrownBy(() -> scheduleService.createSchedule(request))
-                .isInstanceOf(CommonException.class)
-                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
-    }
-
-    @Test
     @DisplayName("hospitalName 누락 시 INVALID_INPUT 예외 발생")
     void createSchedule_fail_missingHospitalName() {
-        ScheduleCreateRequest request = createRequest(1L, null, null, 1741680000L);
+        ScheduleCreateRequest request = createRequest(null, null, 1741680000L);
 
-        assertThatThrownBy(() -> scheduleService.createSchedule(request))
+        assertThatThrownBy(() -> scheduleService.createSchedule(TEST_USER_ID, request))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
     }
@@ -118,9 +109,9 @@ class ScheduleCreateServiceTest {
     @Test
     @DisplayName("visitTime 누락 시 INVALID_INPUT 예외 발생")
     void createSchedule_fail_missingVisitTime() {
-        ScheduleCreateRequest request = createRequest(1L, "강남 클리닉", null, null);
+        ScheduleCreateRequest request = createRequest("강남 클리닉", null, null);
 
-        assertThatThrownBy(() -> scheduleService.createSchedule(request))
+        assertThatThrownBy(() -> scheduleService.createSchedule(TEST_USER_ID, request))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
     }

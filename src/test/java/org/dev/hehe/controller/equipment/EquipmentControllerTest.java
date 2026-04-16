@@ -6,8 +6,11 @@ import org.dev.hehe.dto.equipment.EquipmentResponse;
 import org.dev.hehe.service.equipment.EquipmentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.dev.hehe.config.SecurityConfig;
+import org.dev.hehe.config.jwt.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,11 +28,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - @WebMvcTest: Controller 레이어만 로드 (Service는 Mock 처리)
  */
 @WebMvcTest(EquipmentController.class)
+@Import(SecurityConfig.class)
 @DisplayName("EquipmentController 테스트")
 class EquipmentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
 
     @MockitoBean
     private EquipmentService equipmentService;

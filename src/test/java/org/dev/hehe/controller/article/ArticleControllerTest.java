@@ -7,8 +7,11 @@ import org.dev.hehe.dto.article.ArticleResponse;
 import org.dev.hehe.service.article.ArticleService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.dev.hehe.config.SecurityConfig;
+import org.dev.hehe.config.jwt.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,11 +30,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - MockMvc를 통해 HTTP 요청/응답 검증
  */
 @WebMvcTest(ArticleController.class)
+@Import(SecurityConfig.class)
 @DisplayName("ArticleController 테스트")
 class ArticleControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
 
     // Service 계층을 Mock으로 대체하여 Controller 로직만 검증
     @MockitoBean

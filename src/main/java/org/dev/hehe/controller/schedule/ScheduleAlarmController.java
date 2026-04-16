@@ -3,6 +3,7 @@ package org.dev.hehe.controller.schedule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.schedule.ScheduleAlarmRequest;
 import org.dev.hehe.dto.schedule.ScheduleAlarmResponse;
 import org.dev.hehe.service.schedule.ScheduleAlarmService;
@@ -31,9 +32,10 @@ public class ScheduleAlarmController implements ScheduleAlarmApiSpecification {
     @Override
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<ScheduleAlarmResponse> addAlarm(@PathVariable Long scheduleId,
-                                                       @RequestBody ScheduleAlarmRequest request) {
-        log.info("[POST] /api/v1/schedules/{}/alarms - alarmType={}", scheduleId, request.getAlarmType());
+    public ApiResponse<ScheduleAlarmResponse> addAlarm(@LoginUser Long userId,
+                                                        @PathVariable Long scheduleId,
+                                                        @RequestBody ScheduleAlarmRequest request) {
+        log.info("[POST] /api/v1/schedules/{}/alarms - userId={}, alarmType={}", scheduleId, userId, request.getAlarmType());
         ScheduleAlarmResponse response = scheduleAlarmService.addAlarm(scheduleId, request.getAlarmType());
         log.info("알림 등록 완료 - scheduleId={}, alarmType={}", scheduleId, request.getAlarmType());
         return ApiResponse.ok(response);
@@ -42,9 +44,10 @@ public class ScheduleAlarmController implements ScheduleAlarmApiSpecification {
     /** 알림 삭제 */
     @Override
     @DeleteMapping("/{alarmType}")
-    public ApiResponse<Void> removeAlarm(@PathVariable Long scheduleId,
-                                         @PathVariable String alarmType) {
-        log.info("[DELETE] /api/v1/schedules/{}/alarms/{} - 알림 삭제 요청", scheduleId, alarmType);
+    public ApiResponse<Void> removeAlarm(@LoginUser Long userId,
+                                          @PathVariable Long scheduleId,
+                                          @PathVariable String alarmType) {
+        log.info("[DELETE] /api/v1/schedules/{}/alarms/{} - userId={}, 알림 삭제 요청", scheduleId, alarmType, userId);
         scheduleAlarmService.removeAlarm(scheduleId, alarmType);
         log.info("알림 삭제 완료 - scheduleId={}, alarmType={}", scheduleId, alarmType);
         return ApiResponse.ok(null);

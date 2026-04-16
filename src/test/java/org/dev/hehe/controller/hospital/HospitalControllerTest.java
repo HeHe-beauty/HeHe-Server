@@ -10,8 +10,11 @@ import org.dev.hehe.dto.hospital.HospitalMapResponse;
 import org.dev.hehe.service.hospital.HospitalService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.dev.hehe.config.SecurityConfig;
+import org.dev.hehe.config.jwt.JwtProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,8 +37,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * HospitalController 단위 테스트
  */
 @WebMvcTest(HospitalController.class)
+@Import(SecurityConfig.class)
 @DisplayName("HospitalController 테스트")
 class HospitalControllerTest {
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,8 +1,13 @@
 package org.dev.hehe.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import jakarta.annotation.PostConstruct;
+import org.dev.hehe.config.auth.LoginUser;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,13 +29,27 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
+    /**
+     * @LoginUser 어노테이션이 붙은 파라미터(userId)를 Swagger에서 숨김 처리
+     * FE가 userId를 직접 입력하지 않도록 UI에서 제거
+     */
+    @PostConstruct
+    public void hideLoginUserFromSwagger() {
+        SpringDocUtils.getConfig().addAnnotationsToIgnore(LoginUser.class);
+    }
+
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("HEHE API")
                         .description("HEHE 서비스 API 문서")
-                        .version("v1.0.0"));
+                        .version("v1.0.0"))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth", new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")));
     }
 
     /** 전체 API */

@@ -5,8 +5,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.schedule.ScheduleAlarmRequest;
 import org.dev.hehe.dto.schedule.ScheduleAlarmResponse;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +28,8 @@ public interface ScheduleAlarmApiSpecification {
                     일정에 알림을 등록합니다.
                     지원 alarmType: 1H(1시간 전), 1D(1일 전), 3D(3일 전)
                     이미 등록된 alarmType이면 409를 반환합니다.
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -82,6 +85,7 @@ public interface ScheduleAlarmApiSpecification {
             )
     })
     ApiResponse<ScheduleAlarmResponse> addAlarm(
+            @LoginUser Long userId,
             @Parameter(description = "일정 ID", required = true) @PathVariable Long scheduleId,
             @RequestBody ScheduleAlarmRequest request
     );
@@ -92,7 +96,8 @@ public interface ScheduleAlarmApiSpecification {
                     일정에서 알림을 삭제합니다.
                     지원 alarmType: 1H, 1D, 3D
                     등록되지 않은 alarmType이면 404를 반환합니다.
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -131,6 +136,7 @@ public interface ScheduleAlarmApiSpecification {
             )
     })
     ApiResponse<Void> removeAlarm(
+            @LoginUser Long userId,
             @Parameter(description = "일정 ID", required = true) @PathVariable Long scheduleId,
             @Parameter(description = "삭제할 알림 유형 (1H, 1D, 3D)", required = true) @PathVariable String alarmType
     );

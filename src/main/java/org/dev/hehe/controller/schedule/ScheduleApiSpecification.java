@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
 import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
 import org.dev.hehe.dto.schedule.ScheduleDailyRequest;
@@ -30,7 +32,8 @@ public interface ScheduleApiSpecification {
 
     @Operation(
             summary = "일정 단건 조회",
-            description = "scheduleId로 일정 상세와 연결된 알림 목록을 함께 반환합니다."
+            description = "scheduleId로 일정 상세와 연결된 알림 목록을 함께 반환합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -68,6 +71,7 @@ public interface ScheduleApiSpecification {
             )
     })
     ApiResponse<ScheduleResponse> getSchedule(
+            @LoginUser Long userId,
             @Parameter(description = "조회할 일정 ID", required = true) @PathVariable Long scheduleId
     );
 
@@ -76,9 +80,8 @@ public interface ScheduleApiSpecification {
             description = """
                     특정 날짜의 일정 목록을 반환합니다. (해당 날짜 00:00:00 ~ 23:59:59)
                     visit_time은 Unix timestamp(seconds)로 반환되며, 시간대 전환은 클라이언트에서 처리합니다.
-
-                    TODO: Auth 구현 후 userId 파라미터 제거 예정 (JWT에서 자동 추출)
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -112,16 +115,16 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@ParameterObject @Valid ScheduleDailyRequest request);
+    ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@LoginUser Long userId,
+                                                            @ParameterObject @Valid ScheduleDailyRequest request);
 
     @Operation(
             summary = "예정 일정 N건 조회",
             description = """
                     현재 시각 이후의 예정 일정을 visit_time 오름차순(가까운 순)으로 N건 반환합니다.
                     visit_time은 Unix timestamp(seconds)로 반환되며, 시간대 전환은 클라이언트에서 처리합니다.
-
-                    TODO: Auth 구현 후 userId 파라미터 제거 예정 (JWT에서 자동 추출)
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -167,16 +170,14 @@ public interface ScheduleApiSpecification {
             )
     })
     ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(
+            @LoginUser Long userId,
             @ParameterObject @Valid ScheduleUpcomingRequest request
     );
 
     @Operation(
             summary = "일정 생성",
-            description = """
-                    방문 일정을 생성합니다. alarm_enabled 는 항상 true 로 저장됩니다.
-                    
-                    TODO: Auth 구현 후 요청 body의 userId 제거 예정 (JWT에서 자동 추출)
-                    """
+            description = "방문 일정을 생성합니다. alarm_enabled 는 항상 true 로 저장됩니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -205,7 +206,8 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ScheduleCreateResponse> createSchedule(@RequestBody ScheduleCreateRequest request);
+    ApiResponse<ScheduleCreateResponse> createSchedule(@LoginUser Long userId,
+                                                        @RequestBody ScheduleCreateRequest request);
 
     @Operation(
             summary = "일정 수정",
@@ -215,7 +217,8 @@ public interface ScheduleApiSpecification {
                     - 전달된 필드만 수정하며, null 인 필드는 기존값을 유지합니다.
                     - hospitalName, procedureName, visitTime 중 최소 하나 이상 전달해야 합니다.
                     - 수정 완료 후 최신 일정 상세(알림 목록 포함)를 반환합니다.
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -264,6 +267,7 @@ public interface ScheduleApiSpecification {
             )
     })
     ApiResponse<ScheduleResponse> updateSchedule(
+            @LoginUser Long userId,
             @Parameter(description = "수정할 일정 ID", required = true) @PathVariable Long scheduleId,
             @RequestBody ScheduleUpdateRequest request
     );
@@ -272,7 +276,8 @@ public interface ScheduleApiSpecification {
             summary = "일정 삭제",
             description = """
                     방문 일정을 삭제합니다. 연관된 알림(tb_schedule_alarm)도 함께 삭제됩니다.
-                    """
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -297,6 +302,7 @@ public interface ScheduleApiSpecification {
             )
     })
     ApiResponse<Void> deleteSchedule(
+            @LoginUser Long userId,
             @Parameter(description = "삭제할 일정 ID", required = true) @PathVariable Long scheduleId
     );
 }

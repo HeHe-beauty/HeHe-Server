@@ -169,35 +169,34 @@ public class ScheduleService {
      *
      * <p>tb_schedule 에 일정을 저장한다. alarm_enabled 는 항상 true 로 저장.</p>
      * <p>알림 등록·제거는 별도 알림 API에서 처리.</p>
-     *
-     * <p>TODO: Auth 구현 후 userId 파라미터 제거, JWT에서 자동 추출</p>
      * <p>TODO: 운영 환경에서는 scheduleId 생성 전략을 Snowflake 등으로 교체</p>
      *
+     * @param userId  JWT에서 추출한 인증된 유저 ID
      * @param request 일정 생성 요청
      * @return 생성된 일정 ID
      * @throws CommonException INVALID_INPUT — 필수값 누락
      */
     @Transactional
-    public ScheduleCreateResponse createSchedule(ScheduleCreateRequest request) {
+    public ScheduleCreateResponse createSchedule(Long userId, ScheduleCreateRequest request) {
         validateCreateRequest(request);
 
         // TODO: 운영 환경에서는 Snowflake 등 분산 ID 생성기로 교체
         long scheduleId = System.currentTimeMillis();
 
         log.debug("일정 생성 - userId={}, hospitalName={}, scheduleId={}",
-                request.getUserId(), request.getHospitalName(), scheduleId);
+                userId, request.getHospitalName(), scheduleId);
 
         // alarmEnabled 는 항상 true 로 저장 (알림 등록/제거는 별도 API에서 처리)
         scheduleMapper.insertSchedule(
                 scheduleId,
-                request.getUserId(),
+                userId,
                 request.getHospitalName(),
                 request.getProcedureName(),
                 request.getVisitTime(),
                 true
         );
 
-        log.info("일정 생성 완료 - userId={}, scheduleId={}", request.getUserId(), scheduleId);
+        log.info("일정 생성 완료 - userId={}, scheduleId={}", userId, scheduleId);
         return ScheduleCreateResponse.builder().scheduleId(scheduleId).build();
     }
 
@@ -286,9 +285,6 @@ public class ScheduleService {
      * @throws CommonException INVALID_INPUT — 필수값 누락
      */
     private void validateCreateRequest(ScheduleCreateRequest request) {
-        if (request.getUserId() == null) {
-            throw new CommonException(ErrorCode.INVALID_INPUT);
-        }
         if (request.getHospitalName() == null || request.getHospitalName().isBlank()) {
             throw new CommonException(ErrorCode.INVALID_INPUT);
         }

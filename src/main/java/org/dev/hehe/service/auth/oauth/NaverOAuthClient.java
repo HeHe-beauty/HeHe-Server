@@ -42,11 +42,25 @@ public class NaverOAuthClient {
                     .bodyToMono(Map.class)
                     .block();
 
+            log.debug("[Naver OAuth] 응답 원문 - JOSH260416 : {}", response);
+
             Map<?, ?> userResponse = (Map<?, ?>) response.get("response");
             String socialId = (String) userResponse.get("id");
-            String nickname = (String) userResponse.get("nickname");
+            String rawNickname = (String) userResponse.get("nickname");
+            String rawName = (String) userResponse.get("name");
+            // nickname → name → 기본값 순으로 적용
+            String nickname;
+            if (rawNickname != null && !rawNickname.isBlank()) {
+                nickname = rawNickname;
+            } else if (rawName != null && !rawName.isBlank()) {
+                nickname = rawName;
+                log.info("[Naver OAuth] nickname 없음 - name 값으로 대체: {}", rawName);
+            } else {
+                nickname = "네이버 유저";
+                log.warn("[Naver OAuth] nickname, name 모두 없음 - 기본값 사용");
+            }
 
-            log.info("[Naver OAuth] 유저 정보 조회 성공 - socialId: {}", socialId);
+            log.info("[Naver OAuth] 유저 정보 조회 성공 - JOSH260416 - socialId: {}, nickname: {}", socialId, nickname);
 
             return new NaverUserInfo(socialId, nickname);
 

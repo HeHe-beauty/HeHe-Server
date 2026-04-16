@@ -42,10 +42,12 @@ public class KakaoOAuthClient {
                     .bodyToMono(Map.class)
                     .block();
 
+            log.debug("[Kakao OAuth] 응답 원문 - JOSH260416: {}", response);
+
             String socialId = String.valueOf(response.get("id"));
             String nickname = extractKakaoNickname(response);
 
-            log.info("[Kakao OAuth] 유저 정보 조회 성공 - socialId: {}", socialId);
+            log.info("[Kakao OAuth] 유저 정보 조회 성공 - JOSH260416 - socialId: {}, nickname: {}", socialId, nickname);
 
             return new KakaoUserInfo(socialId, nickname);
 
@@ -65,7 +67,18 @@ public class KakaoOAuthClient {
         try {
             Map<?, ?> kakaoAccount = (Map<?, ?>) response.get("kakao_account");
             Map<?, ?> profile = (Map<?, ?>) kakaoAccount.get("profile");
-            return (String) profile.get("nickname");
+            String nickname = (String) profile.get("nickname");
+            // nickname → name → 기본값 순으로 적용
+            if (nickname != null && !nickname.isBlank()) {
+                return nickname;
+            }
+            String name = (String) profile.get("name");
+            if (name != null && !name.isBlank()) {
+                log.info("[Kakao OAuth] nickname 없음 - name 값으로 대체: {}", name);
+                return name;
+            }
+            log.warn("[Kakao OAuth] nickname, name 모두 없음 - 기본값 사용");
+            return "카카오 유저";
         } catch (Exception e) {
             log.warn("[Kakao OAuth] 닉네임 파싱 실패 - 기본값 사용");
             return "카카오 유저";

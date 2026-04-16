@@ -65,12 +65,13 @@ public class AuthService {
             // 기존 유저: 닉네임 최신화
             userId = existingUser.get().getUserId();
             userMapper.updateNickname(userId, nickname);
-            log.info("[Auth] 기존 유저 로그인 - userId: {}", userId);
+            log.info("[Auth] 로그인 성공 - userId: {}, provider: {}, nickname: {}", userId, providerUpper, nickname);
         } else {
             // 신규 유저: 회원가입
             userId = generateUserId();
             userMapper.insertUser(userId, userInfo.getSocialId(), providerUpper, nickname);
-            log.info("[Auth] 신규 유저 가입 - userId: {}, provider: {}", userId, providerUpper);
+            log.info("[Auth] 회원가입 완료 - userId: {}, provider: {}, socialId: {}, nickname: {}",
+                    userId, providerUpper, userInfo.getSocialId(), nickname);
         }
 
         // 3. 앱 JWT 발급

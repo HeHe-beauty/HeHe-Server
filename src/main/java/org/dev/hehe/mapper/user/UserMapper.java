@@ -2,7 +2,6 @@ package org.dev.hehe.mapper.user;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -48,7 +47,6 @@ public interface UserMapper {
      */
     @Insert("INSERT INTO tb_user (user_id, social_id, provider, nickname, status) " +
             "VALUES (#{userId}, #{socialId}, #{provider}, #{nickname}, 'ACTIVE')")
-    @Options(useGeneratedKeys = true, keyProperty = "generatedId")
     void insertUser(@Param("userId") Long userId,
                     @Param("socialId") String socialId,
                     @Param("provider") String provider,

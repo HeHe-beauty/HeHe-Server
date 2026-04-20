@@ -35,6 +35,15 @@ jwt:
   access-token-expiry: 3600      # 1시간 (초)
   refresh-token-expiry: 1209600  # 14일 (초)
 
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET_NAME:hehe-service-bucket}
+    region: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+
 logging:
   level:
     # 봇이 HTTP 포트에 HTTPS(TLS) 요청을 보낼 때 발생하는 Tomcat 파싱 오류 억제

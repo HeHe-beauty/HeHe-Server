@@ -115,4 +115,13 @@ public class SwaggerConfig {
                 .build();
     }
 
+    /** 파일 업로드 */
+    @Bean
+    public GroupedOpenApi uploadApi() {
+        return GroupedOpenApi.builder()
+                .group("07. Upload")
+                .pathsToMatch("/api/v1/upload/**")
+                .build();
+    }
+
 }

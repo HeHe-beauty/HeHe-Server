@@ -22,6 +22,6 @@ public class ScheduleCreateRequest {
     private String procedureName;
 
     /** 방문 예정 시각 (Unix timestamp, seconds, 필수) */
-    @Schema(description = "방문 시각 (unix timestamp - millisecond)", example = "1777024800", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(type = "string", description = "방문 시각 (millisecond)", example = "1777024800", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long visitTime;
 }

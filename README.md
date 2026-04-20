@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.20_
+_last update : 26.04.20_ (도메인·ALB·HTTPS 적용)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -19,7 +19,7 @@ _last update : 26.04.20_
 
 ---
 
-## 실행 환경
+## 실행 환경 (로컬)
 
 - MySQL 데이터베이스: `hehe_db`
 - 기본 포트: `8080`
@@ -29,14 +29,35 @@ _last update : 26.04.20_
 ## 접속 방법
 ```
 
-# SSH 접속
-ssh -i your-key.pem ec2-user@{ELASTIC_IP}
+# Swagger UI (운영)
+https://api.hehehe.kr/swagger-ui.html
 
-# Swagger UI
-http://{ELASTIC_IP}:8080/swagger-ui.html
+# Swagger UI (로컬)
+http://localhost:8080/swagger-ui.html
 
 # API 호출 예시
-http://{ELASTIC_IP}:8080/api/v1/common/time
+https://api.hehehe.kr/api/v1/common/time
+```
+
+## 도메인
+| 도메인 | 용도 |
+|---|---|
+| `hehehe.kr` | 메인 도메인 |
+| `www.hehehe.kr` | www 서브도메인 |
+| `api.hehehe.kr` | API 서버 |
+
+## 인프라 구성
+```
+클라이언트
+  ↓ HTTPS (443)
+Route 53 (hehehe.kr)
+  ↓
+ALB (hehe-alb) — ACM 인증서 적용
+  ↓ HTTP (8080)
+EC2 t3.micro (ap-northeast-2c)
+  ├── Spring Boot (Docker)
+  ├── MySQL 8
+  └── Redis
 ```
 
 

@@ -17,7 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
@@ -60,6 +62,47 @@ class ScheduleControllerTest {
         // "test-token"을 유효한 토큰으로 처리하고 userId=1L 반환
         given(jwtProvider.getUserIdFromToken(TEST_TOKEN)).willReturn(TEST_USER_ID);
         // validateToken은 void이므로 예외 미발생(기본 동작)으로 유효한 토큰 처리
+    }
+
+    // =============================================
+    // GET /api/v1/schedules/summary 테스트
+    // =============================================
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/summary - 날짜별 예약 건수 정상 반환")
+    void getScheduleSummary_success() throws Exception {
+        // given
+        Map<String, Integer> mockSummary = new LinkedHashMap<>();
+        mockSummary.put("2026-04-15", 2);
+        mockSummary.put("2026-04-20", 1);
+        mockSummary.put("2026-05-03", 3);
+
+        given(scheduleService.getScheduleSummary(TEST_USER_ID)).willReturn(mockSummary);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/schedules/summary")
+                        .header("Authorization", "Bearer " + TEST_TOKEN))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data['2026-04-15']").value(2))
+                .andExpect(jsonPath("$.data['2026-04-20']").value(1))
+                .andExpect(jsonPath("$.data['2026-05-03']").value(3));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/schedules/summary - 일정 없을 때 빈 객체 반환")
+    void getScheduleSummary_empty() throws Exception {
+        // given
+        given(scheduleService.getScheduleSummary(TEST_USER_ID)).willReturn(Map.of());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/schedules/summary")
+                        .header("Authorization", "Bearer " + TEST_TOKEN))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isEmpty());
     }
 
     // =============================================

@@ -9,6 +9,7 @@ import org.dev.hehe.domain.schedule.ScheduleAlarm;
 import org.dev.hehe.dto.schedule.ScheduleAlarmResponse;
 import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
 import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
+import org.dev.hehe.dto.schedule.ScheduleDateCountDto;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.dto.schedule.ScheduleUpdateRequest;
 import org.dev.hehe.mapper.schedule.ScheduleMapper;
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -162,6 +164,32 @@ public class ScheduleService {
 
         log.debug("날짜별 일정 조회 완료 - userId={}, date={}, count={}", userId, date, result.size());
         return result;
+    }
+
+    /**
+     * 유저의 전체 일정을 날짜별 예약 건수 Map으로 반환
+     *
+     * <p>캘린더 점 표시용 API — 예약이 없는 날짜는 응답에 포함되지 않음.</p>
+     * <p>날짜 오름차순(ASC)으로 정렬하여 반환.</p>
+     *
+     * @param userId 조회할 유저 ID
+     * @return 날짜(yyyy-MM-dd) → 예약 건수 Map (예약 있는 날짜만 포함)
+     */
+    public Map<String, Integer> getScheduleSummary(Long userId) {
+        log.debug("전체 일정 요약 조회 - userId={}", userId);
+
+        List<ScheduleDateCountDto> result = scheduleMapper.findScheduleCountGroupByDate(userId);
+
+        Map<String, Integer> summary = result.stream()
+                .collect(Collectors.toMap(
+                        ScheduleDateCountDto::getDate,
+                        ScheduleDateCountDto::getCount,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        log.debug("전체 일정 요약 조회 완료 - userId={}, dateCount={}", userId, summary.size());
+        return summary;
     }
 
     /**

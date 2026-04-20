@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Schedule API Swagger 명세 인터페이스
@@ -29,6 +30,33 @@ import java.util.List;
  */
 @Tag(name = "Schedule", description = "캘린더 일정 API")
 public interface ScheduleApiSpecification {
+
+    @Operation(
+            summary = "전체 일정 요약 조회 (캘린더 점 표시용)",
+            description = """
+                    유저의 전체 일정을 날짜별 예약 건수 Map으로 반환합니다.
+                    예약이 없는 날짜는 응답에 포함되지 않습니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "success": true,
+                                      "data": {
+                                        "2026-04-15": 2,
+                                        "2026-04-20": 1,
+                                        "2026-05-03": 3
+                                      }
+                                    }
+                                    """))
+            )
+    })
+    ApiResponse<Map<String, Integer>> getScheduleSummary(@LoginUser Long userId);
 
     @Operation(
             summary = "일정 단건 조회",

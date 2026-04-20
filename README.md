@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.09_
+_last update : 26.04.20_
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -64,6 +64,7 @@ http://{ELASTIC_IP}:8080/api/v1/common/time
 ### Schedule
 | Method | Endpoint | 설명 |
 |---|---|---|
+| GET | `/api/v1/schedules/summary` | 전체 일정 날짜별 건수 조회 (캘린더 점 표시용) |
 | GET | `/api/v1/schedules/upcoming` | 예정 일정 N건 조회 |
 | GET | `/api/v1/schedules/daily` | 날짜별 예약 일정 조회 |
 | POST | `/api/v1/schedules` | 예약 일정 생성 |
@@ -79,6 +80,11 @@ http://{ELASTIC_IP}:8080/api/v1/common/time
 | GET | `/api/v1/hospitals/map` | 지도 뷰포트 내 클러스터 조회 |
 | GET | `/api/v1/hospitals` | 클러스터 내 병원 목록 조회 |
 | GET | `/api/v1/hospitals/{hospitalId}` | 병원 상세 조회 |
+
+### Upload
+| Method | Endpoint | 설명 |
+|---|---|---|
+| POST | `/api/v1/upload/image` | S3 이미지 업로드 |
 
 ---
 

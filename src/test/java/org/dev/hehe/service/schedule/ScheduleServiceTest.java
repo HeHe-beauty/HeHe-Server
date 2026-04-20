@@ -3,6 +3,7 @@ package org.dev.hehe.service.schedule;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.domain.schedule.Schedule;
 import org.dev.hehe.domain.schedule.ScheduleAlarm;
+import org.dev.hehe.dto.schedule.ScheduleDateCountDto;
 import org.dev.hehe.dto.schedule.ScheduleResponse;
 import org.dev.hehe.mapper.schedule.ScheduleMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
@@ -480,6 +482,74 @@ class ScheduleServiceTest {
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
 
         verifyNoMoreInteractions(scheduleMapper);
+    }
+
+    // =============================================
+    // getScheduleSummary 테스트
+    // =============================================
+
+    /**
+     * 테스트용 ScheduleDateCountDto 생성 헬퍼
+     */
+    private ScheduleDateCountDto createDateCountDto(String date, int count) {
+        ScheduleDateCountDto dto = new ScheduleDateCountDto();
+        ReflectionTestUtils.setField(dto, "date", date);
+        ReflectionTestUtils.setField(dto, "count", count);
+        return dto;
+    }
+
+    @Test
+    @DisplayName("전체 일정 요약 조회 성공 - 날짜별 건수 Map 반환")
+    void getScheduleSummary_success() {
+        // given
+        List<ScheduleDateCountDto> mockResult = List.of(
+                createDateCountDto("2026-04-15", 2),
+                createDateCountDto("2026-04-20", 1),
+                createDateCountDto("2026-05-03", 3)
+        );
+        given(scheduleMapper.findScheduleCountGroupByDate(1L)).willReturn(mockResult);
+
+        // when
+        Map<String, Integer> result = scheduleService.getScheduleSummary(1L);
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result.get("2026-04-15")).isEqualTo(2);
+        assertThat(result.get("2026-04-20")).isEqualTo(1);
+        assertThat(result.get("2026-05-03")).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("전체 일정 요약 조회 - 일정 없으면 빈 Map 반환")
+    void getScheduleSummary_empty() {
+        // given
+        given(scheduleMapper.findScheduleCountGroupByDate(1L)).willReturn(List.of());
+
+        // when
+        Map<String, Integer> result = scheduleService.getScheduleSummary(1L);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(scheduleMapper).findScheduleCountGroupByDate(1L);
+    }
+
+    @Test
+    @DisplayName("전체 일정 요약 조회 - 날짜 오름차순 정렬 유지 검증")
+    void getScheduleSummary_orderByDateAsc() {
+        // given
+        List<ScheduleDateCountDto> mockResult = List.of(
+                createDateCountDto("2026-04-01", 1),
+                createDateCountDto("2026-04-15", 2),
+                createDateCountDto("2026-05-01", 3)
+        );
+        given(scheduleMapper.findScheduleCountGroupByDate(1L)).willReturn(mockResult);
+
+        // when
+        Map<String, Integer> result = scheduleService.getScheduleSummary(1L);
+
+        // then: LinkedHashMap이므로 삽입 순서(= 날짜 오름차순) 유지
+        List<String> keys = List.copyOf(result.keySet());
+        assertThat(keys).containsExactly("2026-04-01", "2026-04-15", "2026-05-01");
     }
 
     @Test

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 캘린더 일정 컨트롤러
@@ -36,6 +37,16 @@ import java.util.List;
 public class ScheduleController implements ScheduleApiSpecification {
 
     private final ScheduleService scheduleService;
+
+    /** 전체 일정 요약 조회 (날짜별 예약 건수, 캘린더 점 표시용) */
+    @Override
+    @GetMapping("/summary")
+    public ApiResponse<Map<String, Integer>> getScheduleSummary(@LoginUser Long userId) {
+        log.info("[GET] /api/v1/schedules/summary - 전체 일정 요약 조회 요청 - userId={}", userId);
+        Map<String, Integer> summary = scheduleService.getScheduleSummary(userId);
+        log.info("전체 일정 요약 조회 완료 - userId={}, dateCount={}", userId, summary.size());
+        return ApiResponse.ok(summary);
+    }
 
     /** 일정 단건 조회 (알림 목록 포함) */
     @Override

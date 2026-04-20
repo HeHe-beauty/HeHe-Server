@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Update;
 import org.dev.hehe.domain.schedule.Schedule;
 import org.dev.hehe.domain.schedule.ScheduleAlarm;
 import org.dev.hehe.dto.schedule.ScheduleAlarmInsertDto;
+import org.dev.hehe.dto.schedule.ScheduleDateCountDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -204,4 +205,23 @@ public interface ScheduleMapper {
      */
     @Delete("DELETE FROM tb_schedule WHERE schedule_id = #{scheduleId}")
     int deleteSchedule(@Param("scheduleId") long scheduleId);
+
+    /**
+     * 특정 유저의 전체 일정을 날짜별로 그룹화하여 예약 건수 조회
+     *
+     * <p>visit_time(Unix timestamp)을 날짜(yyyy-MM-dd)로 변환 후 GROUP BY</p>
+     * <p>예약이 0건인 날짜는 결과에 포함되지 않음</p>
+     *
+     * @param userId 조회할 유저 ID
+     * @return 날짜별 예약 건수 목록 (date ASC)
+     */
+    @Select("""
+            SELECT DATE_FORMAT(FROM_UNIXTIME(visit_time), '%Y-%m-%d') AS date,
+                   COUNT(*) AS count
+            FROM tb_schedule
+            WHERE user_id = #{userId}
+            GROUP BY DATE_FORMAT(FROM_UNIXTIME(visit_time), '%Y-%m-%d')
+            ORDER BY date ASC
+            """)
+    List<ScheduleDateCountDto> findScheduleCountGroupByDate(@Param("userId") Long userId);
 }

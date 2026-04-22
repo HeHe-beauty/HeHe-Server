@@ -4,9 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.article.ArticleListResponse;
 import org.dev.hehe.dto.article.ArticleResponse;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +27,7 @@ public interface ArticleApiSpecification {
             description = "활성 아티클을 우선순위 순으로 반환합니다. 본문(content)은 목록에서 제외합니다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -51,12 +52,12 @@ public interface ArticleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<ArticleListResponse>> getArticles();
+    ApiResult<List<ArticleListResponse>> getArticles();
 
 
     @Operation(summary = "아티클 단건 조회", description = "articleId로 특정 아티클을 조회합니다. 없으면 404를 반환합니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -73,7 +74,7 @@ public interface ArticleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "아티클 없음",
                     content = @Content(mediaType = "application/json",
@@ -86,5 +87,5 @@ public interface ArticleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ArticleResponse> getArticle(@Parameter(description = "조회할 아티클 ID") @PathVariable Long articleId);
+    ApiResult<ArticleResponse> getArticle(@Parameter(description = "조회할 아티클 ID") @PathVariable Long articleId);
 }

@@ -14,14 +14,14 @@ import org.dev.hehe.common.exception.ErrorCode;
  */
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ApiResponse<T> {
+public class ApiResult<T> {
 
     private final boolean success;
     private final T data;
     private final String errorCode;
     private final String message;
 
-    private ApiResponse(boolean success, T data, String errorCode, String message) {
+    private ApiResult(boolean success, T data, String errorCode, String message) {
         this.success = success;
         this.data = data;
         this.errorCode = errorCode;
@@ -29,17 +29,17 @@ public class ApiResponse<T> {
     }
 
     /** 성공 응답 */
-    public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, data, null, null);
+    public static <T> ApiResult<T> ok(T data) {
+        return new ApiResult<>(true, data, null, null);
     }
 
     /** 실패 응답 - ErrorCode 기반 */
-    public static <T> ApiResponse<T> fail(ErrorCode errorCode) {
-        return new ApiResponse<>(false, null, errorCode.getCode(), errorCode.getMessage());
+    public static <T> ApiResult<T> fail(ErrorCode errorCode) {
+        return new ApiResult<>(false, null, errorCode.getCode(), errorCode.getMessage());
     }
 
     /** 실패 응답 - ErrorCode + 커스텀 메시지 (유효성 검사 실패 등) */
-    public static <T> ApiResponse<T> fail(ErrorCode errorCode, String message) {
-        return new ApiResponse<>(false, null, errorCode.getCode(), message);
+    public static <T> ApiResult<T> fail(ErrorCode errorCode, String message) {
+        return new ApiResult<>(false, null, errorCode.getCode(), message);
     }
 }

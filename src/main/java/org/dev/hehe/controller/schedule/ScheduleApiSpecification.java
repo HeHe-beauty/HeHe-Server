@@ -4,11 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.schedule.ScheduleCreateRequest;
 import org.dev.hehe.dto.schedule.ScheduleCreateResponse;
@@ -40,7 +41,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -56,7 +57,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<Map<String, Integer>> getScheduleSummary(@LoginUser Long userId);
+    ApiResult<Map<String, Integer>> getScheduleSummary(@LoginUser Long userId);
 
     @Operation(
             summary = "일정 단건 조회",
@@ -64,7 +65,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -85,7 +86,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "일정 없음",
                     content = @Content(mediaType = "application/json",
@@ -98,7 +99,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ScheduleResponse> getSchedule(
+    ApiResult<ScheduleResponse> getSchedule(
             @LoginUser Long userId,
             @Parameter(description = "조회할 일정 ID", required = true) @PathVariable Long scheduleId
     );
@@ -112,7 +113,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -134,7 +135,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "필수 파라미터 누락 또는 날짜 형식 오류",
                     content = @Content(mediaType = "application/json",
@@ -143,7 +144,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<ScheduleResponse>> getSchedulesByDate(@LoginUser Long userId,
+    ApiResult<List<ScheduleResponse>> getSchedulesByDate(@LoginUser Long userId,
                                                             @ParameterObject @Valid ScheduleDailyRequest request);
 
     @Operation(
@@ -155,7 +156,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -184,7 +185,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "필수 파라미터 누락 또는 limit < 1",
                     content = @Content(mediaType = "application/json",
@@ -197,7 +198,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<ScheduleResponse>> getUpcomingSchedules(
+    ApiResult<List<ScheduleResponse>> getUpcomingSchedules(
             @LoginUser Long userId,
             @ParameterObject @Valid ScheduleUpcomingRequest request
     );
@@ -208,7 +209,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "201",
                     description = "일정 생성 성공",
                     content = @Content(mediaType = "application/json",
@@ -221,7 +222,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "필수값 누락 또는 잘못된 alarmType",
                     content = @Content(mediaType = "application/json",
@@ -234,7 +235,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ScheduleCreateResponse> createSchedule(@LoginUser Long userId,
+    ApiResult<ScheduleCreateResponse> createSchedule(@LoginUser Long userId,
                                                         @RequestBody ScheduleCreateRequest request);
 
     @Operation(
@@ -249,7 +250,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "수정 성공",
                     content = @Content(mediaType = "application/json",
@@ -269,7 +270,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "수정 필드 없음 또는 hospitalName 공백",
                     content = @Content(mediaType = "application/json",
@@ -281,7 +282,7 @@ public interface ScheduleApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "일정 없음",
                     content = @Content(mediaType = "application/json",
@@ -294,7 +295,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ScheduleResponse> updateSchedule(
+    ApiResult<ScheduleResponse> updateSchedule(
             @LoginUser Long userId,
             @Parameter(description = "수정할 일정 ID", required = true) @PathVariable Long scheduleId,
             @RequestBody ScheduleUpdateRequest request
@@ -308,7 +309,7 @@ public interface ScheduleApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "삭제 성공",
                     content = @Content(mediaType = "application/json",
@@ -316,7 +317,7 @@ public interface ScheduleApiSpecification {
                                     { "success": true }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "일정 없음",
                     content = @Content(mediaType = "application/json",
@@ -329,7 +330,7 @@ public interface ScheduleApiSpecification {
                                     """))
             )
     })
-    ApiResponse<Void> deleteSchedule(
+    ApiResult<Void> deleteSchedule(
             @LoginUser Long userId,
             @Parameter(description = "삭제할 일정 ID", required = true) @PathVariable Long scheduleId
     );

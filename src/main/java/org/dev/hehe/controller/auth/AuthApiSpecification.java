@@ -25,7 +25,7 @@ public interface AuthApiSpecification {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 (C002)"),
             @ApiResponse(responseCode = "502", description = "소셜 유저 정보 조회 실패 (AU004)")
     })
-    org.dev.hehe.common.response.ApiResponse<AuthLoginResponse> login(
+    org.dev.hehe.common.response.ApiResult<AuthLoginResponse> login(
             @Valid @RequestBody AuthLoginRequest request);
 
     @Operation(summary = "로그아웃",
@@ -34,7 +34,7 @@ public interface AuthApiSpecification {
             @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
             @ApiResponse(responseCode = "401", description = "인증 정보 없음 (AU003)")
     })
-    org.dev.hehe.common.response.ApiResponse<Void> logout(Long userId);
+    org.dev.hehe.common.response.ApiResult<Void> logout(Long userId);
 
     @Operation(summary = "Access Token 재발급",
             description = "Refresh Token으로 새 Access Token을 발급합니다.")
@@ -42,6 +42,6 @@ public interface AuthApiSpecification {
             @ApiResponse(responseCode = "200", description = "재발급 성공"),
             @ApiResponse(responseCode = "401", description = "유효하지 않거나 만료된 토큰 (AU001/AU002/AU003)")
     })
-    org.dev.hehe.common.response.ApiResponse<TokenRefreshResponse> refresh(
+    org.dev.hehe.common.response.ApiResult<TokenRefreshResponse> refresh(
             @Valid @RequestBody TokenRefreshRequest request);
 }

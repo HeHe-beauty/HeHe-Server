@@ -26,7 +26,7 @@ public interface UploadApiSpecification {
             @ApiResponse(responseCode = "400", description = "잘못된 파일 형식 (C002)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류 (C001)")
     })
-    org.dev.hehe.common.response.ApiResponse<UploadResponse> uploadImage(
+    org.dev.hehe.common.response.ApiResult<UploadResponse> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "directory", defaultValue = "articles") String directory
     );

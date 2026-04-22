@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  *
  * <p>사용 예:</p>
  * <pre>
- *   public ApiResponse<?> someApi(@LoginUser Long userId) { ... }
+ *   public ApiResult<?> someApi(@LoginUser Long userId) { ... }
  * </pre>
  *
  * <p>미인증 요청인 경우 {@code CommonException(ErrorCode.UNAUTHORIZED)} 발생</p>

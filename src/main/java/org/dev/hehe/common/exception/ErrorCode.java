@@ -47,6 +47,17 @@ public enum ErrorCode {
     ALARM_NOT_FOUND(HttpStatus.NOT_FOUND, "S003", "등록된 알림을 찾을 수 없습니다."),
 
     /* ========================
+     * B : Bookmark
+     * ======================== */
+    BOOKMARK_ALREADY_EXISTS(HttpStatus.CONFLICT, "B001", "이미 찜한 병원입니다."),
+    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "B002", "찜한 병원을 찾을 수 없습니다."),
+
+    /* ========================
+     * CO : Contact
+     * ======================== */
+    CONTACT_NOT_FOUND(HttpStatus.NOT_FOUND, "CO001", "문의 내역을 찾을 수 없습니다."),
+
+    /* ========================
      * AU : Auth
      * ======================== */
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AU001", "유효하지 않은 토큰입니다."),

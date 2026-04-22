@@ -2,7 +2,7 @@ package org.dev.hehe.controller.equipment;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.equipment.EquipmentResponse;
 import org.dev.hehe.service.equipment.EquipmentService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,19 +26,19 @@ public class EquipmentController implements EquipmentApiSpecification {
 
     @Override
     @GetMapping("/main")
-    public ApiResponse<List<EquipmentResponse>> getMainEquipments() {
+    public ApiResult<List<EquipmentResponse>> getMainEquipments() {
         log.info("[GET] /api/v1/equipments - 메인 노출 기기 목록 조회 요청");
         List<EquipmentResponse> equipments = equipmentService.getMainDisplayEquipments();
         log.info("메인 노출 기기 조회 완료 - count={}", equipments.size());
-        return ApiResponse.ok(equipments);
+        return ApiResult.ok(equipments);
     }
 
     @Override
     @GetMapping("/{equipId}")
-    public ApiResponse<EquipmentResponse> getEquipmentById(@PathVariable Long equipId) {
+    public ApiResult<EquipmentResponse> getEquipmentById(@PathVariable Long equipId) {
         log.info("[GET] /api/v1/equipments/{} - 기기 단건 조회 요청", equipId);
         EquipmentResponse equipment = equipmentService.getEquipmentById(equipId);
         log.info("기기 단건 조회 완료 - equipId={}", equipId);
-        return ApiResponse.ok(equipment);
+        return ApiResult.ok(equipment);
     }
 }

@@ -4,9 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.equipment.EquipmentResponse;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -24,7 +25,7 @@ public interface EquipmentApiSpecification {
     @Operation(summary = "메인 노출 기기 목록 조회",
             description = "홈 화면에 노출할 기기 목록을 반환합니다. is_main_display=true 인 기기만 display_order 순으로 반환합니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -39,7 +40,7 @@ public interface EquipmentApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "500",
                     description = "서버 내부 오류",
                     content = @Content(mediaType = "application/json",
@@ -52,13 +53,13 @@ public interface EquipmentApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<EquipmentResponse>> getMainEquipments();
+    ApiResult<List<EquipmentResponse>> getMainEquipments();
 
 
     @Operation(summary = "기기 단건 조회",
             description = "equipId로 특정 기기를 조회합니다. 존재하지 않으면 404를 반환합니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -73,7 +74,7 @@ public interface EquipmentApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "기기 없음 (H002)",
                     content = @Content(mediaType = "application/json",
@@ -86,6 +87,6 @@ public interface EquipmentApiSpecification {
                                     """))
             )
     })
-    ApiResponse<EquipmentResponse> getEquipmentById(
+    ApiResult<EquipmentResponse> getEquipmentById(
             @Parameter(description = "조회할 기기 ID") @PathVariable Long equipId);
 }

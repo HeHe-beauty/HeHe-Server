@@ -4,10 +4,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.schedule.ScheduleAlarmRequest;
 import org.dev.hehe.dto.schedule.ScheduleAlarmResponse;
@@ -32,7 +33,7 @@ public interface ScheduleAlarmApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "201",
                     description = "알림 등록 성공",
                     content = @Content(mediaType = "application/json",
@@ -47,7 +48,7 @@ public interface ScheduleAlarmApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "일정 없음",
                     content = @Content(mediaType = "application/json",
@@ -59,7 +60,7 @@ public interface ScheduleAlarmApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "409",
                     description = "이미 등록된 알림 유형",
                     content = @Content(mediaType = "application/json",
@@ -71,7 +72,7 @@ public interface ScheduleAlarmApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "지원하지 않는 alarmType",
                     content = @Content(mediaType = "application/json",
@@ -84,7 +85,7 @@ public interface ScheduleAlarmApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ScheduleAlarmResponse> addAlarm(
+    ApiResult<ScheduleAlarmResponse> addAlarm(
             @LoginUser Long userId,
             @Parameter(description = "일정 ID", required = true) @PathVariable Long scheduleId,
             @RequestBody ScheduleAlarmRequest request
@@ -100,7 +101,7 @@ public interface ScheduleAlarmApiSpecification {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "알림 삭제 성공",
                     content = @Content(mediaType = "application/json",
@@ -110,7 +111,7 @@ public interface ScheduleAlarmApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "일정 없음 또는 알림 없음",
                     content = @Content(mediaType = "application/json",
@@ -122,7 +123,7 @@ public interface ScheduleAlarmApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "지원하지 않는 alarmType",
                     content = @Content(mediaType = "application/json",
@@ -135,7 +136,7 @@ public interface ScheduleAlarmApiSpecification {
                                     """))
             )
     })
-    ApiResponse<Void> removeAlarm(
+    ApiResult<Void> removeAlarm(
             @LoginUser Long userId,
             @Parameter(description = "일정 ID", required = true) @PathVariable Long scheduleId,
             @Parameter(description = "삭제할 알림 유형 (1H, 1D, 3D)", required = true) @PathVariable String alarmType

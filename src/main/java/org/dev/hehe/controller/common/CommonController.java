@@ -1,7 +1,7 @@
 package org.dev.hehe.controller.common;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.common.ServerTimeResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,11 +24,11 @@ public class CommonController implements CommonApiSpecification {
 
     @Override
     @GetMapping("/time")
-    public ApiResponse<ServerTimeResponse> getServerTime() {
+    public ApiResult<ServerTimeResponse> getServerTime() {
         LocalDateTime now = LocalDateTime.now();
         log.info("[GET] /api/v1/common/time - 서버 시각 조회 요청");
 
-        return ApiResponse.ok(
+        return ApiResult.ok(
                 ServerTimeResponse.builder()
                         .timestamp(System.currentTimeMillis())
                         .datetime(now.format(FORMATTER))

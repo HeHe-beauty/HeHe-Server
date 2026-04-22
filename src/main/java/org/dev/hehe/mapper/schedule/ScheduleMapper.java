@@ -224,4 +224,13 @@ public interface ScheduleMapper {
             ORDER BY date ASC
             """)
     List<ScheduleDateCountDto> findScheduleCountGroupByDate(@Param("userId") Long userId);
+
+    /**
+     * 유저의 전체 예약 수 조회
+     *
+     * @param userId 유저 ID
+     * @return 예약 수
+     */
+    @Select("SELECT COUNT(*) FROM tb_schedule WHERE user_id = #{userId}")
+    int countSchedules(@Param("userId") Long userId);
 }

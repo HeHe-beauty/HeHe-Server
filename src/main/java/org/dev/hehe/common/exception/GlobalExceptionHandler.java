@@ -1,7 +1,7 @@
 package org.dev.hehe.common.exception;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -23,11 +23,11 @@ public class GlobalExceptionHandler {
      * ErrorCode에 정의된 HTTP 상태 코드로 응답
      */
     @ExceptionHandler(CommonException.class)
-    public ResponseEntity<ApiResponse<Void>> handleCommonException(CommonException e) {
+    public ResponseEntity<ApiResult<Void>> handleCommonException(CommonException e) {
         log.warn("CommonException - code={}, message={}", e.getErrorCode().getCode(), e.getMessage());
         return ResponseEntity
                 .status(e.getErrorCode().getStatus())
-                .body(ApiResponse.fail(e.getErrorCode()));
+                .body(ApiResult.fail(e.getErrorCode()));
     }
 
     /**
@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
      * 첫 번째 필드 에러 메시지를 응답에 포함
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<ApiResult<Void>> handleValidationException(MethodArgumentNotValidException e) {
         String errorMessage = e.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
@@ -44,18 +44,18 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed - {}", errorMessage);
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, errorMessage));
+                .body(ApiResult.fail(ErrorCode.INVALID_INPUT, errorMessage));
     }
 
     /**
      * 필수 요청 파라미터 누락 예외 처리 (@RequestParam 필수값 미전달 등)
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMissingParam(MissingServletRequestParameterException e) {
+    public ResponseEntity<ApiResult<Void>> handleMissingParam(MissingServletRequestParameterException e) {
         log.warn("Missing request parameter - {}", e.getParameterName());
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, e.getParameterName() + " 파라미터가 필요합니다."));
+                .body(ApiResult.fail(ErrorCode.INVALID_INPUT, e.getParameterName() + " 파라미터가 필요합니다."));
     }
 
     /**
@@ -63,11 +63,11 @@ public class GlobalExceptionHandler {
      * 봇 스캐닝 트래픽 등 외부 요청이 주요 원인이므로 WARN 수준으로만 기록
      */
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException e) {
+    public ResponseEntity<ApiResult<Void>> handleNoResourceFound(NoResourceFoundException e) {
         log.warn("No resource found - {}", e.getResourcePath());
         return ResponseEntity
                 .status(404)
-                .body(ApiResponse.fail(ErrorCode.INVALID_INPUT, "요청한 리소스를 찾을 수 없습니다."));
+                .body(ApiResult.fail(ErrorCode.INVALID_INPUT, "요청한 리소스를 찾을 수 없습니다."));
     }
 
     /**
@@ -75,10 +75,10 @@ public class GlobalExceptionHandler {
      * 상세 오류는 로그로만 기록하고, 클라이언트에는 일반 메시지만 응답
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+    public ResponseEntity<ApiResult<Void>> handleException(Exception e) {
         log.error("Unhandled Exception", e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-                .body(ApiResponse.fail(ErrorCode.INTERNAL_SERVER_ERROR));
+                .body(ApiResult.fail(ErrorCode.INTERNAL_SERVER_ERROR));
     }
 }

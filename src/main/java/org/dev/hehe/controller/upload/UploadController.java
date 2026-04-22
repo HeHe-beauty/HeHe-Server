@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.upload.UploadResponse;
 import org.dev.hehe.service.s3.S3Service;
 import org.springframework.http.MediaType;
@@ -35,7 +35,7 @@ public class UploadController implements UploadApiSpecification {
 
     @Override
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<UploadResponse> uploadImage(
+    public ApiResult<UploadResponse> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "directory", defaultValue = "articles") String directory
     ) {
@@ -45,7 +45,7 @@ public class UploadController implements UploadApiSpecification {
         validateFile(file);
 
         String fileUrl = s3Service.upload(file, directory);
-        return ApiResponse.ok(UploadResponse.builder().fileUrl(fileUrl).build());
+        return ApiResult.ok(UploadResponse.builder().fileUrl(fileUrl).build());
     }
 
     /**

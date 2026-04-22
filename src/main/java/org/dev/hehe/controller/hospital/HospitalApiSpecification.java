@@ -4,9 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import jakarta.validation.Valid;
 import org.dev.hehe.dto.hospital.HospitalClusterRequest;
 import org.dev.hehe.dto.hospital.HospitalDetailResponse;
@@ -36,7 +37,7 @@ public interface HospitalApiSpecification {
                     """
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -53,7 +54,7 @@ public interface HospitalApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "400",
                     description = "필수 파라미터 누락",
                     content = @Content(mediaType = "application/json",
@@ -62,7 +63,7 @@ public interface HospitalApiSpecification {
                                     """))
             )
     })
-    ApiResponse<HospitalMapResponse> getMapClusters(@ParameterObject @Valid HospitalMapRequest request);
+    ApiResult<HospitalMapResponse> getMapClusters(@ParameterObject @Valid HospitalMapRequest request);
 
     @Operation(
             summary = "클러스터 내 병원 목록 조회",
@@ -74,7 +75,7 @@ public interface HospitalApiSpecification {
                     """
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -93,14 +94,14 @@ public interface HospitalApiSpecification {
                                     """))
             )
     })
-    ApiResponse<List<HospitalListResponse>> getHospitalsByCluster(@ParameterObject @Valid HospitalClusterRequest request);
+    ApiResult<List<HospitalListResponse>> getHospitalsByCluster(@ParameterObject @Valid HospitalClusterRequest request);
 
     @Operation(
             summary = "병원 상세 조회",
             description = "병원 ID로 상세 정보(태그, 보유 장비 포함)를 반환합니다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -123,7 +124,7 @@ public interface HospitalApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "404",
                     description = "병원 없음",
                     content = @Content(mediaType = "application/json",
@@ -132,7 +133,7 @@ public interface HospitalApiSpecification {
                                     """))
             )
     })
-    ApiResponse<HospitalDetailResponse> getHospitalDetail(
+    ApiResult<HospitalDetailResponse> getHospitalDetail(
             @Parameter(description = "조회할 병원 ID", required = true) @PathVariable Long hospitalId
     );
 }

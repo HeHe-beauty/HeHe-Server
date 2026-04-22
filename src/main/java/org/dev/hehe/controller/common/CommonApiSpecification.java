@@ -3,9 +3,10 @@ package org.dev.hehe.controller.common;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.common.ServerTimeResponse;
 
 /**
@@ -18,7 +19,7 @@ public interface CommonApiSpecification {
 
     @Operation(summary = "서버 현재 시각 조회", description = "서버 기준 현재 시각을 Unix timestamp(ms)와 datetime 문자열로 반환합니다.")
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "200",
                     description = "조회 성공",
                     content = @Content(mediaType = "application/json",
@@ -32,7 +33,7 @@ public interface CommonApiSpecification {
                                     }
                                     """))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            @ApiResponse(
                     responseCode = "500",
                     description = "서버 내부 오류",
                     content = @Content(mediaType = "application/json",
@@ -45,5 +46,5 @@ public interface CommonApiSpecification {
                                     """))
             )
     })
-    ApiResponse<ServerTimeResponse> getServerTime();
+    ApiResult<ServerTimeResponse> getServerTime();
 }

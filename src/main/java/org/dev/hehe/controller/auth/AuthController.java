@@ -2,7 +2,7 @@ package org.dev.hehe.controller.auth;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.dev.hehe.common.response.ApiResponse;
+import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.dto.auth.AuthLoginRequest;
 import org.dev.hehe.dto.auth.AuthLoginResponse;
 import org.dev.hehe.dto.auth.TokenRefreshRequest;
@@ -29,22 +29,22 @@ public class AuthController implements AuthApiSpecification {
 
     @PostMapping("/login")
     @Override
-    public ApiResponse<AuthLoginResponse> login(@Valid @RequestBody AuthLoginRequest request) {
+    public ApiResult<AuthLoginResponse> login(@Valid @RequestBody AuthLoginRequest request) {
         AuthLoginResponse response = authService.login(request.provider(), request.accessToken());
-        return ApiResponse.ok(response);
+        return ApiResult.ok(response);
     }
 
     @PostMapping("/logout")
     @Override
-    public ApiResponse<Void> logout(@AuthenticationPrincipal Long userId) {
+    public ApiResult<Void> logout(@AuthenticationPrincipal Long userId) {
         authService.logout(userId);
-        return ApiResponse.ok(null);
+        return ApiResult.ok(null);
     }
 
     @PostMapping("/token/refresh")
     @Override
-    public ApiResponse<TokenRefreshResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
+    public ApiResult<TokenRefreshResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
         TokenRefreshResponse response = authService.refresh(request.refreshToken());
-        return ApiResponse.ok(response);
+        return ApiResult.ok(response);
     }
 }

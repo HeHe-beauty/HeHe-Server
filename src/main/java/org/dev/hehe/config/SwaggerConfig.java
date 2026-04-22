@@ -97,12 +97,12 @@ public class SwaggerConfig {
                 .build();
     }
 
-    /** 찜 / 인터랙션 */
+    /** 찜 / 인터랙션 / 문의 */
     @Bean
     public GroupedOpenApi interactionApi() {
         return GroupedOpenApi.builder()
                 .group("05. Interaction")
-                .pathsToMatch("/api/v1/bookmarks/**")
+                .pathsToMatch("/api/v1/bookmarks/**", "/api/v1/contacts/**", "/api/v1/recent-views/**")
                 .build();
     }
 

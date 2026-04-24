@@ -43,6 +43,7 @@ public class SecurityConfig {
                 // 경로별 인증 설정
                 .authorizeHttpRequests(auth -> auth
                         // 인증 불필요 경로
+                        .requestMatchers("/health").permitAll()       // ALB 헬스체크
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/common/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/hospitals/**").permitAll()

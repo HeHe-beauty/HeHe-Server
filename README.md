@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.23_ (FCM 푸시 토큰 등록/비활성화 API 추가, 개발용 dev-login 추가)
+_last update : 26.04.24_ (ALB 헬스체크 전용 API 추가 — GET /health)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -69,6 +69,7 @@ EC2 t3.micro (ap-northeast-2c)
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/v1/common/time` | 서버 현재 시각 조회 |
+| GET | `/health` | ALB 헬스체크 전용 (Swagger 미노출) |
 
 ### Article
 | Method | Endpoint | 설명 |

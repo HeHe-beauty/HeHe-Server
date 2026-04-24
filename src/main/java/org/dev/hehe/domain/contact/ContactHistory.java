@@ -21,6 +21,9 @@ public class ContactHistory {
     /** 병원명 (tb_hospital JOIN) */
     private String hospitalName;
 
+    /** 병원 주소 (tb_hospital JOIN) */
+    private String address;
+
     /** 문의 유형 (CALL/CHAT/VISIT) */
     private String contactType;
 

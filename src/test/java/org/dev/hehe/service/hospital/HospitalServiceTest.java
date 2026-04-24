@@ -9,6 +9,7 @@ import org.dev.hehe.dto.hospital.HospitalClusterItem;
 import org.dev.hehe.dto.hospital.HospitalEquipmentInfo;
 import org.dev.hehe.dto.hospital.HospitalListResponse;
 import org.dev.hehe.dto.hospital.HospitalMapResponse;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.hospital.HospitalMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class HospitalServiceTest {
 
     @Mock
     private HospitalMapper hospitalMapper;
+
+    @Mock
+    private BookmarkMapper bookmarkMapper;
 
     @InjectMocks
     private HospitalService hospitalService;
@@ -147,9 +151,11 @@ class HospitalServiceTest {
                 .willReturn(List.of(summary1, summary2));
         given(hospitalMapper.findTagsByHospitalIds(List.of(101L, 102L)))
                 .willReturn(List.of(tag1, tag2, tag3));
+        given(bookmarkMapper.findBookmarkedHospitalIds(1L, List.of(101L, 102L)))
+                .willReturn(List.of(101L));
 
         // when
-        List<HospitalListResponse> result = hospitalService.getHospitalsByCluster(37.52, 127.05, 2, null);
+        List<HospitalListResponse> result = hospitalService.getHospitalsByCluster(37.52, 127.05, 2, null, 1L);
 
         // then
         assertThat(result).hasSize(2);
@@ -166,7 +172,7 @@ class HospitalServiceTest {
                 .willReturn(List.of());
 
         // when
-        List<HospitalListResponse> result = hospitalService.getHospitalsByCluster(37.52, 127.05, 2, null);
+        List<HospitalListResponse> result = hospitalService.getHospitalsByCluster(37.52, 127.05, 2, null, null);
 
         // then
         assertThat(result).isEmpty();
@@ -188,9 +194,10 @@ class HospitalServiceTest {
         given(hospitalMapper.findHospitalById(101L)).willReturn(Optional.of(detail));
         given(hospitalMapper.findTagNamesByHospitalId(101L)).willReturn(List.of("여성원장", "주차가능"));
         given(hospitalMapper.findEquipmentsByHospitalId(101L)).willReturn(List.of(equip));
+        given(bookmarkMapper.existsBookmark(1L, 101L)).willReturn(true);
 
         // when
-        var response = hospitalService.getHospitalDetail(101L);
+        var response = hospitalService.getHospitalDetail(101L, 1L);
 
         // then
         assertThat(response.getHospitalId()).isEqualTo(101L);
@@ -208,7 +215,7 @@ class HospitalServiceTest {
         given(hospitalMapper.findHospitalById(999L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> hospitalService.getHospitalDetail(999L))
+        assertThatThrownBy(() -> hospitalService.getHospitalDetail(999L, null))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.HOSPITAL_NOT_FOUND));

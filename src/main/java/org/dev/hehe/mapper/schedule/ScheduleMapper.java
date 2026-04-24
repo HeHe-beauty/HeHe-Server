@@ -226,11 +226,12 @@ public interface ScheduleMapper {
     List<ScheduleDateCountDto> findScheduleCountGroupByDate(@Param("userId") Long userId);
 
     /**
-     * 유저의 전체 예약 수 조회
+     * 유저의 예정 예약 수 조회 (현재 시각 이후)
      *
-     * @param userId 유저 ID
-     * @return 예약 수
+     * @param userId  유저 ID
+     * @param nowTime 현재 시각 (Unix timestamp, 포함)
+     * @return 예정 예약 수
      */
-    @Select("SELECT COUNT(*) FROM tb_schedule WHERE user_id = #{userId}")
-    int countSchedules(@Param("userId") Long userId);
+    @Select("SELECT COUNT(*) FROM tb_schedule WHERE user_id = #{userId} AND visit_time >= #{nowTime}")
+    int countUpcomingSchedules(@Param("userId") Long userId, @Param("nowTime") long nowTime);
 }

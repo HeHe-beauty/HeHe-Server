@@ -11,8 +11,12 @@ import org.dev.hehe.dto.hospital.HospitalDetailResponse;
 import org.dev.hehe.dto.hospital.HospitalEquipmentInfo;
 import org.dev.hehe.dto.hospital.HospitalListResponse;
 import org.dev.hehe.dto.hospital.HospitalMapResponse;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.hospital.HospitalMapper;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 public class HospitalService {
 
     private final HospitalMapper hospitalMapper;
+    private final BookmarkMapper bookmarkMapper;
 
     /**
      * 지도 뷰포트 내 클러스터 목록 조회
@@ -73,7 +78,8 @@ public class HospitalService {
      * @return 병원 목록 (태그 포함)
      */
     public List<HospitalListResponse> getHospitalsByCluster(double lat, double lng,
-                                                            int precision, Long equipId) {
+                                                            int precision, Long equipId,
+                                                            Long userId) {
         log.debug("클러스터 병원 목록 조회 - lat={}, lng={}, precision={}, equipId={}", lat, lng, precision, equipId);
 
         List<HospitalSummary> summaries = hospitalMapper.findHospitalsByCluster(lat, lng, precision, equipId);
@@ -82,11 +88,11 @@ public class HospitalService {
             return List.of();
         }
 
-        // 태그 일괄 조회 (N+1 방지)
         List<Long> hospitalIds = summaries.stream()
                 .map(HospitalSummary::getHospitalId)
                 .toList();
 
+        // 태그 일괄 조회 (N+1 방지)
         Map<Long, List<String>> tagMap = hospitalMapper.findTagsByHospitalIds(hospitalIds)
                 .stream()
                 .collect(Collectors.groupingBy(
@@ -94,10 +100,19 @@ public class HospitalService {
                         Collectors.mapping(HospitalTag::getTagName, Collectors.toList())
                 ));
 
+        // 찜 여부 일괄 조회 (로그인 시에만)
+        Set<Long> bookmarkedIds = userId != null
+                ? new HashSet<>(bookmarkMapper.findBookmarkedHospitalIds(userId, hospitalIds))
+                : Set.of();
+
         log.debug("클러스터 병원 목록 조회 완료 - hospitalCount={}", summaries.size());
 
         return summaries.stream()
-                .map(s -> HospitalListResponse.of(s, tagMap.getOrDefault(s.getHospitalId(), List.of())))
+                .map(s -> HospitalListResponse.of(
+                        s,
+                        tagMap.getOrDefault(s.getHospitalId(), List.of()),
+                        userId != null ? bookmarkedIds.contains(s.getHospitalId()) : null
+                ))
                 .toList();
     }
 
@@ -108,7 +123,7 @@ public class HospitalService {
      * @return 병원 상세 응답 (태그, 장비 포함)
      * @throws CommonException HOSPITAL_NOT_FOUND — 존재하지 않는 hospitalId
      */
-    public HospitalDetailResponse getHospitalDetail(Long hospitalId) {
+    public HospitalDetailResponse getHospitalDetail(Long hospitalId, Long userId) {
         log.debug("병원 상세 조회 - hospitalId={}", hospitalId);
 
         var detail = hospitalMapper.findHospitalById(hospitalId)
@@ -120,10 +135,13 @@ public class HospitalService {
         List<String> tags = hospitalMapper.findTagNamesByHospitalId(hospitalId);
         List<HospitalEquipmentInfo> equipments = hospitalMapper.findEquipmentsByHospitalId(hospitalId);
 
+        // 찜 여부 조회 (로그인 시에만)
+        Boolean isBookmarked = userId != null ? bookmarkMapper.existsBookmark(userId, hospitalId) : null;
+
         log.debug("병원 상세 조회 완료 - hospitalId={}, tagCount={}, equipCount={}",
                 hospitalId, tags.size(), equipments.size());
 
-        return HospitalDetailResponse.of(detail, tags, equipments);
+        return HospitalDetailResponse.of(detail, tags, equipments, isBookmarked);
     }
 
     /**

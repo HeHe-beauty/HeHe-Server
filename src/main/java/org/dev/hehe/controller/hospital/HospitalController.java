@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.response.ApiResult;
+import org.dev.hehe.config.auth.LoginUser;
 import org.dev.hehe.dto.hospital.HospitalClusterRequest;
 import org.dev.hehe.dto.hospital.HospitalDetailResponse;
 import org.dev.hehe.dto.hospital.HospitalListResponse;
@@ -45,11 +46,12 @@ public class HospitalController implements HospitalApiSpecification {
     /** 클러스터 내 병원 목록 조회 */
     @Override
     @GetMapping
-    public ApiResult<List<HospitalListResponse>> getHospitalsByCluster(@Valid HospitalClusterRequest request) {
+    public ApiResult<List<HospitalListResponse>> getHospitalsByCluster(@Valid HospitalClusterRequest request,
+                                                                        @LoginUser Long userId) {
         log.info("[GET] /api/v1/hospitals - lat={}, lng={}, precision={}, equipId={}",
                 request.getLat(), request.getLng(), request.getPrecision(), request.getEquipId());
         List<HospitalListResponse> response = hospitalService.getHospitalsByCluster(
-                request.getLat(), request.getLng(), request.getPrecision(), request.getEquipId());
+                request.getLat(), request.getLng(), request.getPrecision(), request.getEquipId(), userId);
         log.info("병원 목록 조회 완료 - count={}", response.size());
         return ApiResult.ok(response);
     }
@@ -57,9 +59,10 @@ public class HospitalController implements HospitalApiSpecification {
     /** 병원 상세 조회 */
     @Override
     @GetMapping("/{hospitalId}")
-    public ApiResult<HospitalDetailResponse> getHospitalDetail(@PathVariable Long hospitalId) {
+    public ApiResult<HospitalDetailResponse> getHospitalDetail(@PathVariable Long hospitalId,
+                                                                @LoginUser Long userId) {
         log.info("[GET] /api/v1/hospitals/{} - 병원 상세 조회", hospitalId);
-        HospitalDetailResponse response = hospitalService.getHospitalDetail(hospitalId);
+        HospitalDetailResponse response = hospitalService.getHospitalDetail(hospitalId, userId);
         log.info("병원 상세 조회 완료 - hospitalId={}", hospitalId);
         return ApiResult.ok(response);
     }

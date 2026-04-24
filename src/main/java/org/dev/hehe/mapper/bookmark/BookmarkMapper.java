@@ -78,4 +78,19 @@ public interface BookmarkMapper {
      */
     @Select("SELECT COUNT(*) FROM tb_bookmark WHERE user_id = #{userId}")
     int countBookmarks(@Param("userId") Long userId);
+
+    /**
+     * 유저가 찜한 병원 ID 목록 중 실제로 찜된 ID만 반환 (배치 조회, N+1 방지)
+     *
+     * @param userId      유저 ID
+     * @param hospitalIds 확인할 병원 ID 목록
+     * @return 찜된 병원 ID Set
+     */
+    @Select("<script>" +
+            "SELECT hospital_id FROM tb_bookmark " +
+            "WHERE user_id = #{userId} AND hospital_id IN " +
+            "<foreach item='id' collection='hospitalIds' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
+    List<Long> findBookmarkedHospitalIds(@Param("userId") Long userId,
+                                         @Param("hospitalIds") List<Long> hospitalIds);
 }

@@ -1,8 +1,6 @@
 package org.dev.hehe.config.auth;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dev.hehe.common.exception.CommonException;
-import org.dev.hehe.common.exception.ErrorCode;
 import org.springframework.core.MethodParameter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,16 +41,9 @@ public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver 
                                   WebDataBinderFactory binderFactory) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.warn("[LoginUser] 인증 정보 없음");
-            throw new CommonException(ErrorCode.UNAUTHORIZED);
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof Long userId)) {
-            log.warn("[LoginUser] principal 타입 불일치 - type: {}", principal.getClass().getSimpleName());
-            throw new CommonException(ErrorCode.UNAUTHORIZED);
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof Long userId)) {
+            return null;
         }
 
         return userId;

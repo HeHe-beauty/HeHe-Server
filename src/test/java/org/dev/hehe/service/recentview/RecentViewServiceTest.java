@@ -3,6 +3,7 @@ package org.dev.hehe.service.recentview;
 import org.dev.hehe.domain.hospital.HospitalTag;
 import org.dev.hehe.domain.recentview.RecentView;
 import org.dev.hehe.dto.recentview.RecentViewResponse;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.hospital.HospitalMapper;
 import org.dev.hehe.mapper.recentview.RecentViewMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -34,6 +35,9 @@ class RecentViewServiceTest {
     @Mock
     private HospitalMapper hospitalMapper;
 
+    @Mock
+    private BookmarkMapper bookmarkMapper;
+
     @InjectMocks
     private RecentViewService recentViewService;
 
@@ -50,6 +54,7 @@ class RecentViewServiceTest {
 
         given(recentViewMapper.findRecentViews(1L)).willReturn(List.of(rv));
         given(hospitalMapper.findTagsByHospitalIds(List.of(101L))).willReturn(List.of(tag));
+        given(bookmarkMapper.findBookmarkedHospitalIds(1L, List.of(101L))).willReturn(List.of(101L));
 
         // when
         List<RecentViewResponse> result = recentViewService.getRecentViews(1L);
@@ -59,6 +64,7 @@ class RecentViewServiceTest {
         assertThat(result.get(0).getHospitalId()).isEqualTo(101L);
         assertThat(result.get(0).getName()).isEqualTo("강남 제모 클리닉");
         assertThat(result.get(0).getTags()).containsExactly("젠틀맥스프로");
+        assertThat(result.get(0).getIsBookmarked()).isTrue();
     }
 
     @Test

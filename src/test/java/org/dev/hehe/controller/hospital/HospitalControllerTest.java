@@ -138,7 +138,7 @@ class HospitalControllerTest {
                         .build()
         );
 
-        given(hospitalService.getHospitalsByCluster(eq(37.52), eq(127.05), eq(2), isNull()))
+        given(hospitalService.getHospitalsByCluster(eq(37.52), eq(127.05), eq(2), isNull(), any()))
                 .willReturn(mockList);
 
         // when & then
@@ -172,7 +172,7 @@ class HospitalControllerTest {
                 .equipments(List.of(equip))
                 .build();
 
-        given(hospitalService.getHospitalDetail(101L)).willReturn(response);
+        given(hospitalService.getHospitalDetail(eq(101L), any())).willReturn(response);
 
         // when & then
         mockMvc.perform(get("/api/v1/hospitals/101"))
@@ -193,7 +193,7 @@ class HospitalControllerTest {
     void getHospitalDetail_notFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.HOSPITAL_NOT_FOUND))
-                .given(hospitalService).getHospitalDetail(999L);
+                .given(hospitalService).getHospitalDetail(eq(999L), any());
 
         // when & then
         mockMvc.perform(get("/api/v1/hospitals/999"))

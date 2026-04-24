@@ -26,7 +26,7 @@ public interface ContactApiSpecification {
 
     @Operation(
             summary = "문의 내역 목록 조회",
-            description = "로그인한 유저의 문의 내역을 최신 문의 순으로 반환합니다. 삭제된 항목은 포함되지 않습니다.",
+            description = "로그인한 유저의 문의 내역을 최신 문의 순으로 반환합니다. 삭제된 항목은 포함되지 않습니다. address, tags, isBookmarked 필드가 포함됩니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
@@ -42,7 +42,10 @@ public interface ContactApiSpecification {
                                           "id": 1,
                                           "hospitalId": 101,
                                           "hospitalName": "강남 제모 클리닉",
+                                          "address": "서울 강남구 역삼동 123-4",
                                           "contactType": "CALL",
+                                          "tags": ["여성원장", "주차가능"],
+                                          "isBookmarked": true,
                                           "createdAt": "2026-04-22T10:30:00"
                                         }
                                       ]

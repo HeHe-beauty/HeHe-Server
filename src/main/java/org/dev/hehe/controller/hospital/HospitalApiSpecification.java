@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.dev.hehe.common.response.ApiResult;
+import org.dev.hehe.config.auth.LoginUser;
 import jakarta.validation.Valid;
 import org.dev.hehe.dto.hospital.HospitalClusterRequest;
 import org.dev.hehe.dto.hospital.HospitalDetailResponse;
@@ -72,57 +73,100 @@ public interface HospitalApiSpecification {
 
                     - lat, lng, precision 은 지도 클러스터 API 응답값을 그대로 전달합니다.
                     - equipId 를 전달하면 해당 장비를 보유한 병원만 필터링됩니다.
+                    - **isBookmarked**: 로그인 상태(JWT 전달)에서만 포함됩니다. 비로그인 시 해당 필드 자체가 응답에 포함되지 않습니다.
                     """
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "조회 성공",
+                    description = "조회 성공 (로그인 시 isBookmarked 포함, 비로그인 시 미포함)",
                     content = @Content(mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": true,
-                                      "data": [
-                                        {
-                                          "hospitalId": 101,
-                                          "name": "강남 제모 클리닉",
-                                          "address": "서울 강남구 역삼동 123-4",
-                                          "tags": ["여성원장", "주차가능"]
-                                        }
-                                      ]
-                                    }
-                                    """))
+                            examples = {
+                                    @ExampleObject(name = "로그인 시", value = """
+                                            {
+                                              "success": true,
+                                              "data": [
+                                                {
+                                                  "hospitalId": 101,
+                                                  "name": "강남 제모 클리닉",
+                                                  "address": "서울 강남구 역삼동 123-4",
+                                                  "tags": ["여성원장", "주차가능"],
+                                                  "isBookmarked": true
+                                                }
+                                              ]
+                                            }
+                                            """),
+                                    @ExampleObject(name = "비로그인 시", value = """
+                                            {
+                                              "success": true,
+                                              "data": [
+                                                {
+                                                  "hospitalId": 101,
+                                                  "name": "강남 제모 클리닉",
+                                                  "address": "서울 강남구 역삼동 123-4",
+                                                  "tags": ["여성원장", "주차가능"]
+                                                }
+                                              ]
+                                            }
+                                            """)
+                            })
             )
     })
-    ApiResult<List<HospitalListResponse>> getHospitalsByCluster(@ParameterObject @Valid HospitalClusterRequest request);
+    ApiResult<List<HospitalListResponse>> getHospitalsByCluster(@ParameterObject @Valid HospitalClusterRequest request,
+                                                                @LoginUser Long userId);
 
     @Operation(
             summary = "병원 상세 조회",
-            description = "병원 ID로 상세 정보(태그, 보유 장비 포함)를 반환합니다."
+            description = """
+                    병원 ID로 상세 정보(태그, 보유 장비 포함)를 반환합니다.
+
+                    - **isBookmarked**: 로그인 상태(JWT 전달)에서만 포함됩니다. 비로그인 시 해당 필드 자체가 응답에 포함되지 않습니다.
+                    """
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "조회 성공",
+                    description = "조회 성공 (로그인 시 isBookmarked 포함, 비로그인 시 미포함)",
                     content = @Content(mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "success": true,
-                                      "data": {
-                                        "hospitalId": 101,
-                                        "name": "강남 제모 클리닉",
-                                        "address": "서울 강남구 역삼동 123-4",
-                                        "lat": 37.512,
-                                        "lng": 127.059,
-                                        "contactNumber": "02-1234-5678",
-                                        "contactUrl": "https://...",
-                                        "tags": ["여성원장", "주차가능"],
-                                        "equipments": [
-                                          { "modelName": "젠틀맥스프로", "totalCount": 2 }
-                                        ]
-                                      }
-                                    }
-                                    """))
+                            examples = {
+                                    @ExampleObject(name = "로그인 시", value = """
+                                            {
+                                              "success": true,
+                                              "data": {
+                                                "hospitalId": 101,
+                                                "name": "강남 제모 클리닉",
+                                                "address": "서울 강남구 역삼동 123-4",
+                                                "lat": 37.512,
+                                                "lng": 127.059,
+                                                "contactNumber": "02-1234-5678",
+                                                "contactUrl": "https://...",
+                                                "tags": ["여성원장", "주차가능"],
+                                                "equipments": [
+                                                  { "modelName": "젠틀맥스프로", "totalCount": 2 }
+                                                ],
+                                                "isBookmarked": true
+                                              }
+                                            }
+                                            """),
+                                    @ExampleObject(name = "비로그인 시", value = """
+                                            {
+                                              "success": true,
+                                              "data": {
+                                                "hospitalId": 101,
+                                                "name": "강남 제모 클리닉",
+                                                "address": "서울 강남구 역삼동 123-4",
+                                                "lat": 37.512,
+                                                "lng": 127.059,
+                                                "contactNumber": "02-1234-5678",
+                                                "contactUrl": "https://...",
+                                                "tags": ["여성원장", "주차가능"],
+                                                "equipments": [
+                                                  { "modelName": "젠틀맥스프로", "totalCount": 2 }
+                                                ]
+                                              }
+                                            }
+                                            """)
+                            })
             ),
             @ApiResponse(
                     responseCode = "404",
@@ -134,6 +178,7 @@ public interface HospitalApiSpecification {
             )
     })
     ApiResult<HospitalDetailResponse> getHospitalDetail(
-            @Parameter(description = "조회할 병원 ID", required = true) @PathVariable Long hospitalId
+            @Parameter(description = "조회할 병원 ID", required = true) @PathVariable Long hospitalId,
+            @LoginUser Long userId
     );
 }

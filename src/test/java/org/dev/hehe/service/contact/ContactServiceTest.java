@@ -3,9 +3,12 @@ package org.dev.hehe.service.contact;
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
 import org.dev.hehe.domain.contact.ContactHistory;
+import org.dev.hehe.domain.hospital.HospitalTag;
 import org.dev.hehe.dto.contact.ContactHistoryResponse;
 import org.dev.hehe.dto.contact.ContactSaveRequest;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.contact.ContactMapper;
+import org.dev.hehe.mapper.hospital.HospitalMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +37,12 @@ class ContactServiceTest {
     @Mock
     private ContactMapper contactMapper;
 
+    @Mock
+    private HospitalMapper hospitalMapper;
+
+    @Mock
+    private BookmarkMapper bookmarkMapper;
+
     @InjectMocks
     private ContactService contactService;
 
@@ -46,7 +55,13 @@ class ContactServiceTest {
         ContactHistory c2 = createContactHistory(2L, 102L, "역삼 스킨케어", "VISIT",
                 LocalDateTime.of(2026, 4, 20, 15, 0));
 
+        HospitalTag tag = new HospitalTag();
+        ReflectionTestUtils.setField(tag, "hospitalId", 101L);
+        ReflectionTestUtils.setField(tag, "tagName", "여성원장");
+
         given(contactMapper.findContactHistories(1L)).willReturn(List.of(c1, c2));
+        given(hospitalMapper.findTagsByHospitalIds(List.of(101L, 102L))).willReturn(List.of(tag));
+        given(bookmarkMapper.findBookmarkedHospitalIds(1L, List.of(101L, 102L))).willReturn(List.of(101L));
 
         // when
         List<ContactHistoryResponse> result = contactService.getContactHistories(1L);
@@ -56,7 +71,10 @@ class ContactServiceTest {
         assertThat(result.get(0).getId()).isEqualTo(1L);
         assertThat(result.get(0).getHospitalName()).isEqualTo("강남 제모 클리닉");
         assertThat(result.get(0).getContactType()).isEqualTo("CALL");
+        assertThat(result.get(0).getTags()).containsExactly("여성원장");
+        assertThat(result.get(0).getIsBookmarked()).isTrue();
         assertThat(result.get(1).getContactType()).isEqualTo("VISIT");
+        assertThat(result.get(1).getIsBookmarked()).isFalse();
     }
 
     @Test

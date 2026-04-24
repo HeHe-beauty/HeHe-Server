@@ -41,6 +41,7 @@ public interface RecentViewApiSpecification {
                                           "name": "강남 제모 클리닉",
                                           "address": "서울 강남구 테헤란로 123",
                                           "tags": ["젠틀맥스프로", "당일예약"],
+                                          "isBookmarked": false,
                                           "viewedAt": "2026-04-22T10:30:00"
                                         }
                                       ]

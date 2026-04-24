@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.domain.recentview.RecentView;
 import org.dev.hehe.dto.recentview.RecentViewResponse;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.hospital.HospitalMapper;
 import org.dev.hehe.mapper.recentview.RecentViewMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +25,7 @@ public class RecentViewService {
 
     private final RecentViewMapper recentViewMapper;
     private final HospitalMapper hospitalMapper;
+    private final BookmarkMapper bookmarkMapper;
 
     /**
      * 최근 본 병원 목록 조회 (최신 순 10건)
@@ -51,8 +55,15 @@ public class RecentViewService {
                         Collectors.mapping(tag -> tag.getTagName(), Collectors.toList())
                 ));
 
+        // 찜 여부 일괄 조회
+        Set<Long> bookmarkedIds = new HashSet<>(bookmarkMapper.findBookmarkedHospitalIds(userId, hospitalIds));
+
         List<RecentViewResponse> result = recentViews.stream()
-                .map(rv -> RecentViewResponse.of(rv, tagsMap.getOrDefault(rv.getHospitalId(), List.of())))
+                .map(rv -> RecentViewResponse.of(
+                        rv,
+                        tagsMap.getOrDefault(rv.getHospitalId(), List.of()),
+                        bookmarkedIds.contains(rv.getHospitalId())
+                ))
                 .toList();
 
         log.info("최근 본 병원 조회 완료 - userId={}, count={}", userId, result.size());

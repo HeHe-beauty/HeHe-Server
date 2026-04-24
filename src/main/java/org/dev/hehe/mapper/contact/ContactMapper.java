@@ -28,6 +28,7 @@ public interface ContactMapper {
             SELECT c.id,
                    c.hospital_id,
                    h.name AS hospital_name,
+                   h.address,
                    c.contact_type,
                    c.created_at
             FROM tb_contact_history c

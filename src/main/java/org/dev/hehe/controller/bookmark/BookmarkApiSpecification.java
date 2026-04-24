@@ -40,6 +40,7 @@ public interface BookmarkApiSpecification {
                                           "name": "강남 제모 클리닉",
                                           "address": "서울 강남구 역삼동 123-4",
                                           "tags": ["여성원장", "주차가능"],
+                                          "isBookmarked": true,
                                           "bookmarkedAt": "2026-04-22T10:30:00"
                                         }
                                       ]

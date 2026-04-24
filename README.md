@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.22_ (문의 내역 조회 API 추가)
+_last update : 26.04.23_ (FCM 푸시 토큰 등록/비활성화 API 추가, 개발용 dev-login 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -120,12 +120,26 @@ EC2 t3.micro (ap-northeast-2c)
 | GET | `/api/v1/recent-views` | 최근 본 병원 목록 조회 (JWT 필요) |
 | POST | `/api/v1/recent-views/{hospitalId}` | 최근 본 병원 기록 (JWT 필요) |
 
+### Auth
+| Method | Endpoint | 설명 |
+|---|---|---|
+| POST | `/api/v1/auth/login` | 소셜 로그인/회원가입 |
+| POST | `/api/v1/auth/logout` | 로그아웃 (JWT 필요) |
+| POST | `/api/v1/auth/token/refresh` | Access Token 재발급 |
+| POST | `/api/v1/auth/dev-login` | **(local 전용)** OAuth 없이 userId로 JWT 발급 |
+
 ### Contact
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/v1/contacts` | 문의 내역 목록 조회 (JWT 필요) |
 | POST | `/api/v1/contacts` | 문의 내역 저장 (JWT 필요) |
 | DELETE | `/api/v1/contacts/{contactId}` | 문의 내역 삭제 (JWT 필요) |
+
+### PushToken
+| Method | Endpoint | 설명 |
+|---|---|---|
+| POST | `/api/v1/push-tokens` | FCM 토큰 등록/갱신 (JWT 필요) |
+| DELETE | `/api/v1/push-tokens` | FCM 토큰 비활성화 (JWT 필요) |
 
 ### Upload
 | Method | Endpoint | 설명 |

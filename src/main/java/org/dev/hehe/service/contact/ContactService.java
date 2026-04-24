@@ -4,10 +4,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
+import org.dev.hehe.domain.contact.ContactHistory;
 import org.dev.hehe.dto.contact.ContactHistoryResponse;
 import org.dev.hehe.dto.contact.ContactSaveRequest;
+import org.dev.hehe.mapper.bookmark.BookmarkMapper;
 import org.dev.hehe.mapper.contact.ContactMapper;
+import org.dev.hehe.mapper.hospital.HospitalMapper;
+import org.dev.hehe.domain.hospital.HospitalTag;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import java.util.List;
 
@@ -20,6 +29,8 @@ import java.util.List;
 public class ContactService {
 
     private final ContactMapper contactMapper;
+    private final HospitalMapper hospitalMapper;
+    private final BookmarkMapper bookmarkMapper;
 
     /**
      * 유저의 문의 내역 목록 조회
@@ -32,9 +43,33 @@ public class ContactService {
     public List<ContactHistoryResponse> getContactHistories(Long userId) {
         log.debug("문의 내역 조회 - userId={}", userId);
 
-        List<ContactHistoryResponse> result = contactMapper.findContactHistories(userId)
+        List<ContactHistory> contacts = contactMapper.findContactHistories(userId);
+
+        if (contacts.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> hospitalIds = contacts.stream()
+                .map(ContactHistory::getHospitalId)
+                .toList();
+
+        // 태그 일괄 조회 (N+1 방지)
+        Map<Long, List<String>> tagsMap = hospitalMapper.findTagsByHospitalIds(hospitalIds)
                 .stream()
-                .map(ContactHistoryResponse::from)
+                .collect(Collectors.groupingBy(
+                        HospitalTag::getHospitalId,
+                        Collectors.mapping(HospitalTag::getTagName, Collectors.toList())
+                ));
+
+        // 찜 여부 일괄 조회
+        Set<Long> bookmarkedIds = new HashSet<>(bookmarkMapper.findBookmarkedHospitalIds(userId, hospitalIds));
+
+        List<ContactHistoryResponse> result = contacts.stream()
+                .map(c -> ContactHistoryResponse.of(
+                        c,
+                        tagsMap.getOrDefault(c.getHospitalId(), List.of()),
+                        bookmarkedIds.contains(c.getHospitalId())
+                ))
                 .toList();
 
         log.debug("문의 내역 조회 완료 - userId={}, count={}", userId, result.size());

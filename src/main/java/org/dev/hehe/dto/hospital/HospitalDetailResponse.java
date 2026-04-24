@@ -1,5 +1,6 @@
 package org.dev.hehe.dto.hospital;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,17 +43,23 @@ public class HospitalDetailResponse {
     @Schema(description = "보유 장비 목록")
     private List<HospitalEquipmentInfo> equipments;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @Schema(description = "찜 여부 (비로그인 시 미노출)", example = "true")
+    private Boolean isBookmarked;
+
     /**
-     * HospitalDetail 도메인 + 태그 + 장비 목록으로 응답 DTO 생성
+     * HospitalDetail 도메인 + 태그 + 장비 목록 + 찜 여부로 응답 DTO 생성
      *
-     * @param detail     병원 상세 도메인
-     * @param tags       태그 목록
-     * @param equipments 장비 목록
+     * @param detail       병원 상세 도메인
+     * @param tags         태그 목록
+     * @param equipments   장비 목록
+     * @param isBookmarked 찜 여부 (비로그인 시 null)
      * @return 응답 DTO
      */
     public static HospitalDetailResponse of(HospitalDetail detail,
                                             List<String> tags,
-                                            List<HospitalEquipmentInfo> equipments) {
+                                            List<HospitalEquipmentInfo> equipments,
+                                            Boolean isBookmarked) {
         return HospitalDetailResponse.builder()
                 .hospitalId(detail.getHospitalId())
                 .name(detail.getName())
@@ -63,6 +70,7 @@ public class HospitalDetailResponse {
                 .contactUrl(detail.getContactUrl())
                 .tags(tags)
                 .equipments(equipments)
+                .isBookmarked(isBookmarked)
                 .build();
     }
 }

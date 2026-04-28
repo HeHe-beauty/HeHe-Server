@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.24_ (ALB 헬스체크 전용 API 추가 — GET /health)
+_last update : 26.04.28_ (FCM 스케줄 알림 발송 구현)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -153,4 +153,4 @@ EC2 t3.micro (ap-northeast-2c)
 
 - Auth / JWT (소셜 로그인, Refresh Token)
 - User (회원가입 · 탈퇴 · 정보 수정)
-- FCM 푸시 알림
+- ~~FCM 푸시 알림~~ → 구현 완료 (스케줄 알람 시각 기준 자동 발송, 야간 필터, 만료 토큰 자동 비활성화)

@@ -44,6 +44,9 @@ cloud:
       access-key: ${AWS_ACCESS_KEY}
       secret-key: ${AWS_SECRET_KEY}
 
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
+
 logging:
   level:
     # 봇이 HTTP 포트에 HTTPS(TLS) 요청을 보낼 때 발생하는 Tomcat 파싱 오류 억제

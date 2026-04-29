@@ -70,12 +70,12 @@ public class SwaggerConfig {
                 .build();
     }
 
-    /** 유저 / 인증 / 푸시 토큰 */
+    /** 유저 / 인증 / 푸시 토큰 / FCM */
     @Bean
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("02. User Auth")
-                .pathsToMatch("/api/v1/auth/**", "/api/v1/users/**", "/api/v1/push-tokens/**")
+                .pathsToMatch("/api/v1/auth/**", "/api/v1/users/**", "/api/v1/push-tokens/**", "/api/v1/fcm/**")
                 .build();
     }
 

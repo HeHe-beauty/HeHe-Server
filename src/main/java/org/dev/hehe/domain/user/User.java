@@ -22,9 +22,6 @@ public class User {
     private String email;
     private String nickname;
     private String fcmToken;
-    private boolean pushAgreed;
-    private boolean nightAgreed;
-    private boolean mktAgreed;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

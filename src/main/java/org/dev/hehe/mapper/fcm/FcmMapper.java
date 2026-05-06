@@ -19,7 +19,8 @@ public interface FcmMapper {
      * 발송 대상 미발송 알람 목록 조회
      *
      * <p>alarm_time이 현재 시각 이하이고 아직 발송되지 않은(is_sent=false) 알람을 조회한다.
-     * 일정 알림 마스터 토글(alarm_enabled)이 꺼져 있거나 유저의 푸시 동의가 없으면 제외된다.</p>
+     * 일정 알림 마스터 토글(alarm_enabled)이 꺼져 있으면 제외된다.
+     * 알림 동의 여부는 FE에서 관리하므로 서버에서 필터링하지 않는다.</p>
      *
      * @return 발송 대상 알람 목록
      */
@@ -28,15 +29,12 @@ public interface FcmMapper {
                    sa.alarm_type,
                    sa.alarm_time,
                    s.user_id,
-                   s.hospital_name,
-                   u.night_agreed
+                   s.hospital_name
             FROM tb_schedule_alarm sa
             JOIN tb_schedule s ON s.schedule_id = sa.schedule_id
-            JOIN tb_user u ON u.user_id = s.user_id
             WHERE sa.alarm_time <= UNIX_TIMESTAMP()
               AND sa.is_sent      = false
               AND s.alarm_enabled = true
-              AND u.push_agreed   = true
             """)
     List<PendingAlarmDto> findPendingAlarms();
 

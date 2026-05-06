@@ -7,8 +7,6 @@ import org.dev.hehe.mapper.fcm.FcmMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
@@ -23,7 +21,6 @@ public class FcmScheduler {
     private final FcmMapper fcmMapper;
     private final FcmSendService fcmSendService;
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final String PUSH_TITLE = "[헤헤] 예약 알림";
 
     /** 알람 발송 유효 기간 (초) — 이 시간을 초과하면 발송 포기 후 완료 처리 */
@@ -33,7 +30,7 @@ public class FcmScheduler {
      * 미발송 스케줄 알람 조회 후 FCM 푸시 발송
      *
      * <p>fixedDelay: 이전 실행 종료 후 1분 뒤 재실행 (중복 실행 방지)</p>
-     * <p>야간(22시~08시)에는 night_agreed=true인 유저에게만 발송한다.</p>
+     * <p>알림 동의 여부는 FE에서 관리하므로 서버 필터링 없이 전체 발송한다.</p>
      */
     @Scheduled(fixedDelay = 60_000)
     public void sendScheduledAlarms() {
@@ -43,19 +40,12 @@ public class FcmScheduler {
         }
 
         log.info("FCM 스케줄러 실행: 발송 대상 알람 {}건", pendingAlarms.size());
-        boolean nightTime = isNightTime();
 
         for (PendingAlarmDto alarm : pendingAlarms) {
             // 만료된 알람은 발송 포기 후 완료 처리
             if (isExpired(alarm.getAlarmTime())) {
                 log.warn("만료된 알람 완료 처리: alarmId={}, alarmTime={}", alarm.getAlarmId(), alarm.getAlarmTime());
                 fcmMapper.markAlarmAsSent(alarm.getAlarmId());
-                continue;
-            }
-
-            // 야간 시간대에는 야간 동의 유저만 발송
-            if (nightTime && !alarm.isNightAgreed()) {
-                log.debug("야간 알림 동의 미완료 — 건너뜀: userId={}", alarm.getUserId());
                 continue;
             }
 
@@ -90,15 +80,6 @@ public class FcmScheduler {
     private boolean isExpired(Long alarmTime) {
         long now = System.currentTimeMillis() / 1000;
         return now - alarmTime > ALARM_EXPIRY_SECONDS;
-    }
-
-    /**
-     * 현재 KST 기준 야간 시간대 여부
-     * 야간: 22시 이상 또는 08시 미만
-     */
-    private boolean isNightTime() {
-        int hour = ZonedDateTime.now(KST).getHour();
-        return hour >= 22 || hour < 8;
     }
 
     /**

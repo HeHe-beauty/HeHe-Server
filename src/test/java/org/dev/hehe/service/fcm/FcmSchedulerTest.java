@@ -48,7 +48,7 @@ class FcmSchedulerTest {
     @Test
     @DisplayName("활성 FCM 토큰이 없으면 발송 없이 다음 주기에 재시도한다")
     void sendScheduledAlarms_noActiveTokens_doesNotMarkAsSent() {
-        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", true);
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원");
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of());
 
@@ -62,7 +62,7 @@ class FcmSchedulerTest {
     @Test
     @DisplayName("1H 알람 발송 성공 시 알람 완료 처리 및 이력을 저장한다")
     void sendScheduledAlarms_1hAlarm_sendsCorrectBodyAndSavesHistory() {
-        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", true);
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원");
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1", "token2"));
         given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(2);
@@ -81,7 +81,7 @@ class FcmSchedulerTest {
     @Test
     @DisplayName("1D 알람 발송 시 '하루 전' 본문을 전송한다")
     void sendScheduledAlarms_1dAlarm_sendsCorrectBody() {
-        PendingAlarmDto alarm = createAlarm(2L, "1D", 10L, "헤헤병원", true);
+        PendingAlarmDto alarm = createAlarm(2L, "1D", 10L, "헤헤병원");
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
         given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
@@ -94,7 +94,7 @@ class FcmSchedulerTest {
     @Test
     @DisplayName("3D 알람 발송 시 '3일 전' 본문을 전송한다")
     void sendScheduledAlarms_3dAlarm_sendsCorrectBody() {
-        PendingAlarmDto alarm = createAlarm(3L, "3D", 10L, "헤헤병원", true);
+        PendingAlarmDto alarm = createAlarm(3L, "3D", 10L, "헤헤병원");
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
         given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
@@ -107,7 +107,7 @@ class FcmSchedulerTest {
     @Test
     @DisplayName("발송 일부 실패 시 성공/실패 건수를 정확히 이력에 저장한다")
     void sendScheduledAlarms_partialFailure_savesCorrectCounts() {
-        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", true);
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원");
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1", "token2", "token3"));
         given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(2);  // 3개 중 2개 성공
@@ -121,7 +121,7 @@ class FcmSchedulerTest {
     @DisplayName("alarm_time이 30분 이상 지난 알람은 발송 포기 후 완료 처리한다")
     void sendScheduledAlarms_expiredAlarm_marksAsSentWithoutSending() {
         long expiredAlarmTime = System.currentTimeMillis() / 1000 - (31 * 60); // 31분 전
-        PendingAlarmDto alarm = createAlarmWithTime(1L, "1H", 10L, "헤헤병원", true, expiredAlarmTime);
+        PendingAlarmDto alarm = createAlarmWithTime(1L, "1H", 10L, "헤헤병원", expiredAlarmTime);
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
 
         fcmScheduler.sendScheduledAlarms();
@@ -135,7 +135,7 @@ class FcmSchedulerTest {
     @DisplayName("alarm_time이 30분 이내인 알람은 정상 발송한다")
     void sendScheduledAlarms_notExpiredAlarm_sends() {
         long recentAlarmTime = System.currentTimeMillis() / 1000 - (10 * 60); // 10분 전
-        PendingAlarmDto alarm = createAlarmWithTime(1L, "1H", 10L, "헤헤병원", true, recentAlarmTime);
+        PendingAlarmDto alarm = createAlarmWithTime(1L, "1H", 10L, "헤헤병원", recentAlarmTime);
         given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
         given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
         given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
@@ -146,46 +146,22 @@ class FcmSchedulerTest {
         verify(fcmMapper).markAlarmAsSent(1L);
     }
 
-    @Test
-    @DisplayName("야간 동의 미완료 유저는 nightAgreed=false이면 알람을 건너뛴다")
-    void sendScheduledAlarms_nightAgreedFalse_skipsAlarmWhenNight() {
-        // nightAgreed=false 설정
-        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", false);
-        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
-
-        // 야간 시간대 모킹
-        try (var mockedZdt = org.mockito.Mockito.mockStatic(java.time.ZonedDateTime.class,
-                org.mockito.Mockito.CALLS_REAL_METHODS)) {
-            java.time.ZonedDateTime nightTime = java.time.ZonedDateTime.of(
-                    2024, 1, 1, 23, 0, 0, 0, java.time.ZoneId.of("Asia/Seoul"));
-            mockedZdt.when(() -> java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Seoul")))
-                    .thenReturn(nightTime);
-
-            fcmScheduler.sendScheduledAlarms();
-        }
-
-        verify(fcmMapper, never()).findActiveTokensByUserId(any());
-        verifyNoInteractions(fcmSendService);
-    }
-
     // ---- helper ----
 
-    private PendingAlarmDto createAlarm(Long alarmId, String alarmType, Long userId,
-                                        String hospitalName, boolean nightAgreed) {
+    private PendingAlarmDto createAlarm(Long alarmId, String alarmType, Long userId, String hospitalName) {
         // 기본 alarmTime: 5분 전 (만료되지 않은 정상 케이스)
-        return createAlarmWithTime(alarmId, alarmType, userId, hospitalName, nightAgreed,
+        return createAlarmWithTime(alarmId, alarmType, userId, hospitalName,
                 System.currentTimeMillis() / 1000 - 300);
     }
 
     private PendingAlarmDto createAlarmWithTime(Long alarmId, String alarmType, Long userId,
-                                                String hospitalName, boolean nightAgreed, long alarmTime) {
+                                                String hospitalName, long alarmTime) {
         PendingAlarmDto alarm = new PendingAlarmDto();
         ReflectionTestUtils.setField(alarm, "alarmId", alarmId);
         ReflectionTestUtils.setField(alarm, "alarmType", alarmType);
         ReflectionTestUtils.setField(alarm, "alarmTime", alarmTime);
         ReflectionTestUtils.setField(alarm, "userId", userId);
         ReflectionTestUtils.setField(alarm, "hospitalName", hospitalName);
-        ReflectionTestUtils.setField(alarm, "nightAgreed", nightAgreed);
         return alarm;
     }
 }

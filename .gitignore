@@ -37,6 +37,7 @@ out/
 .vscode/
 
 ### Project ###
+.claude/
 CLAUDE.md
 application-local.yml
 /mysql_data/

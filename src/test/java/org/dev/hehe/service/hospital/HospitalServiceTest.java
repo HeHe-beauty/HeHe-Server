@@ -2,6 +2,7 @@ package org.dev.hehe.service.hospital;
 
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
+import org.dev.hehe.domain.bookmark.HospitalBookmarkCount;
 import org.dev.hehe.domain.hospital.HospitalDetail;
 import org.dev.hehe.domain.hospital.HospitalSummary;
 import org.dev.hehe.domain.hospital.HospitalTag;
@@ -147,10 +148,15 @@ class HospitalServiceTest {
         HospitalTag tag2 = createTag(101L, "주차가능");
         HospitalTag tag3 = createTag(102L, "야간진료");
 
+        HospitalBookmarkCount bc1 = createBookmarkCount(101L, 5);
+        HospitalBookmarkCount bc2 = createBookmarkCount(102L, 0);
+
         given(hospitalMapper.findHospitalsByCluster(eq(37.52), eq(127.05), eq(2), isNull()))
                 .willReturn(List.of(summary1, summary2));
         given(hospitalMapper.findTagsByHospitalIds(List.of(101L, 102L)))
                 .willReturn(List.of(tag1, tag2, tag3));
+        given(bookmarkMapper.countByHospitalIds(List.of(101L, 102L)))
+                .willReturn(List.of(bc1, bc2));
         given(bookmarkMapper.findBookmarkedHospitalIds(1L, List.of(101L, 102L)))
                 .willReturn(List.of(101L));
 
@@ -161,7 +167,9 @@ class HospitalServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getHospitalId()).isEqualTo(101L);
         assertThat(result.get(0).getTags()).containsExactlyInAnyOrder("여성원장", "주차가능");
+        assertThat(result.get(0).getBookmarkCount()).isEqualTo(5);
         assertThat(result.get(1).getTags()).containsExactly("야간진료");
+        assertThat(result.get(1).getBookmarkCount()).isZero();
     }
 
     @Test
@@ -194,6 +202,7 @@ class HospitalServiceTest {
         given(hospitalMapper.findHospitalById(101L)).willReturn(Optional.of(detail));
         given(hospitalMapper.findTagNamesByHospitalId(101L)).willReturn(List.of("여성원장", "주차가능"));
         given(hospitalMapper.findEquipmentsByHospitalId(101L)).willReturn(List.of(equip));
+        given(bookmarkMapper.countByHospitalId(101L)).willReturn(17);
         given(bookmarkMapper.existsBookmark(1L, 101L)).willReturn(true);
 
         // when
@@ -206,6 +215,7 @@ class HospitalServiceTest {
         assertThat(response.getTags()).containsExactlyInAnyOrder("여성원장", "주차가능");
         assertThat(response.getEquipments()).hasSize(1);
         assertThat(response.getEquipments().get(0).getModelName()).isEqualTo("젠틀맥스프로");
+        assertThat(response.getBookmarkCount()).isEqualTo(17);
     }
 
     @Test
@@ -270,5 +280,12 @@ class HospitalServiceTest {
         ReflectionTestUtils.setField(info, "modelName", modelName);
         ReflectionTestUtils.setField(info, "totalCount", totalCount);
         return info;
+    }
+
+    private HospitalBookmarkCount createBookmarkCount(Long hospitalId, int count) {
+        HospitalBookmarkCount bc = new HospitalBookmarkCount();
+        ReflectionTestUtils.setField(bc, "hospitalId", hospitalId);
+        ReflectionTestUtils.setField(bc, "bookmarkCount", count);
+        return bc;
     }
 }

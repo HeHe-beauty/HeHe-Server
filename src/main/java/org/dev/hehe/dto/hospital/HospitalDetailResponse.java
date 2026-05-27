@@ -43,22 +43,27 @@ public class HospitalDetailResponse {
     @Schema(description = "보유 장비 목록")
     private List<HospitalEquipmentInfo> equipments;
 
+    @Schema(description = "찜 수 (해당 병원을 찜한 사용자 수)", example = "42")
+    private int bookmarkCount;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(description = "찜 여부 (비로그인 시 미노출)", example = "true")
     private Boolean isBookmarked;
 
     /**
-     * HospitalDetail 도메인 + 태그 + 장비 목록 + 찜 여부로 응답 DTO 생성
+     * HospitalDetail 도메인 + 태그 + 장비 목록 + 찜 수 + 찜 여부로 응답 DTO 생성
      *
-     * @param detail       병원 상세 도메인
-     * @param tags         태그 목록
-     * @param equipments   장비 목록
-     * @param isBookmarked 찜 여부 (비로그인 시 null)
+     * @param detail        병원 상세 도메인
+     * @param tags          태그 목록
+     * @param equipments    장비 목록
+     * @param bookmarkCount 해당 병원의 찜 수
+     * @param isBookmarked  찜 여부 (비로그인 시 null)
      * @return 응답 DTO
      */
     public static HospitalDetailResponse of(HospitalDetail detail,
                                             List<String> tags,
                                             List<HospitalEquipmentInfo> equipments,
+                                            int bookmarkCount,
                                             Boolean isBookmarked) {
         return HospitalDetailResponse.builder()
                 .hospitalId(detail.getHospitalId())
@@ -70,6 +75,7 @@ public class HospitalDetailResponse {
                 .contactUrl(detail.getContactUrl())
                 .tags(tags)
                 .equipments(equipments)
+                .bookmarkCount(bookmarkCount)
                 .isBookmarked(isBookmarked)
                 .build();
     }

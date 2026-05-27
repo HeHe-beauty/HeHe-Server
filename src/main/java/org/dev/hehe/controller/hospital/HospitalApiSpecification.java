@@ -91,6 +91,7 @@ public interface HospitalApiSpecification {
                                                   "name": "강남 제모 클리닉",
                                                   "address": "서울 강남구 역삼동 123-4",
                                                   "tags": ["여성원장", "주차가능"],
+                                                  "bookmarkCount": 42,
                                                   "isBookmarked": true
                                                 }
                                               ]
@@ -104,7 +105,8 @@ public interface HospitalApiSpecification {
                                                   "hospitalId": 101,
                                                   "name": "강남 제모 클리닉",
                                                   "address": "서울 강남구 역삼동 123-4",
-                                                  "tags": ["여성원장", "주차가능"]
+                                                  "tags": ["여성원장", "주차가능"],
+                                                  "bookmarkCount": 42
                                                 }
                                               ]
                                             }
@@ -144,6 +146,7 @@ public interface HospitalApiSpecification {
                                                 "equipments": [
                                                   { "modelName": "젠틀맥스프로", "totalCount": 2 }
                                                 ],
+                                                "bookmarkCount": 42,
                                                 "isBookmarked": true
                                               }
                                             }
@@ -162,7 +165,8 @@ public interface HospitalApiSpecification {
                                                 "tags": ["여성원장", "주차가능"],
                                                 "equipments": [
                                                   { "modelName": "젠틀맥스프로", "totalCount": 2 }
-                                                ]
+                                                ],
+                                                "bookmarkCount": 42
                                               }
                                             }
                                             """)

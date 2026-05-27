@@ -131,10 +131,12 @@ class HospitalControllerTest {
                 HospitalListResponse.builder()
                         .hospitalId(101L).name("강남 제모 클리닉")
                         .address("서울 강남구 역삼동 1").tags(List.of("여성원장", "주차가능"))
+                        .bookmarkCount(42).isBookmarked(true)
                         .build(),
                 HospitalListResponse.builder()
                         .hospitalId(102L).name("역삼 스킨케어")
                         .address("서울 강남구 역삼동 2").tags(List.of())
+                        .bookmarkCount(0)
                         .build()
         );
 
@@ -151,6 +153,10 @@ class HospitalControllerTest {
                 .andExpect(jsonPath("$.data[0].hospitalId").value(101))
                 .andExpect(jsonPath("$.data[0].name").value("강남 제모 클리닉"))
                 .andExpect(jsonPath("$.data[0].tags[0]").value("여성원장"))
+                .andExpect(jsonPath("$.data[0].bookmarkCount").value(42))
+                .andExpect(jsonPath("$.data[0].isBookmarked").value(true))
+                .andExpect(jsonPath("$.data[1].bookmarkCount").value(0))
+                .andExpect(jsonPath("$.data[1].isBookmarked").doesNotExist())
                 .andExpect(jsonPath("$.data[1].tags").isArray())
                 .andExpect(jsonPath("$.data[1].tags").isEmpty());
     }
@@ -170,6 +176,7 @@ class HospitalControllerTest {
                 .contactNumber("02-1234-5678").contactUrl(null)
                 .tags(List.of("여성원장", "주차가능"))
                 .equipments(List.of(equip))
+                .bookmarkCount(17)
                 .build();
 
         given(hospitalService.getHospitalDetail(eq(101L), any())).willReturn(response);
@@ -185,7 +192,9 @@ class HospitalControllerTest {
                 .andExpect(jsonPath("$.data.contactUrl").doesNotExist())
                 .andExpect(jsonPath("$.data.tags.length()").value(2))
                 .andExpect(jsonPath("$.data.equipments[0].modelName").value("젠틀맥스프로"))
-                .andExpect(jsonPath("$.data.equipments[0].totalCount").value(2));
+                .andExpect(jsonPath("$.data.equipments[0].totalCount").value(2))
+                .andExpect(jsonPath("$.data.bookmarkCount").value(17))
+                .andExpect(jsonPath("$.data.isBookmarked").doesNotExist());
     }
 
     @Test

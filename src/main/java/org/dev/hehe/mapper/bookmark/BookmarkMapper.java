@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.dev.hehe.domain.bookmark.BookmarkedHospital;
+import org.dev.hehe.domain.bookmark.HospitalBookmarkCount;
 
 import java.util.List;
 
@@ -93,4 +94,29 @@ public interface BookmarkMapper {
             "</script>")
     List<Long> findBookmarkedHospitalIds(@Param("userId") Long userId,
                                          @Param("hospitalIds") List<Long> hospitalIds);
+
+    /**
+     * 특정 병원을 찜한 사용자 수 단건 조회
+     *
+     * @param hospitalId 병원 ID
+     * @return 해당 병원의 찜 수
+     */
+    @Select("SELECT COUNT(*) FROM tb_bookmark WHERE hospital_id = #{hospitalId}")
+    int countByHospitalId(@Param("hospitalId") Long hospitalId);
+
+    /**
+     * 병원 목록의 찜 수 배치 조회 (N+1 방지)
+     *
+     * <p>병원 ID 목록을 한 번에 조회하여 각 병원의 찜 수를 반환한다.</p>
+     *
+     * @param hospitalIds 조회할 병원 ID 목록
+     * @return 병원별 찜 수 목록
+     */
+    @Select("<script>" +
+            "SELECT hospital_id, COUNT(*) AS bookmark_count FROM tb_bookmark " +
+            "WHERE hospital_id IN " +
+            "<foreach item='id' collection='hospitalIds' open='(' separator=',' close=')'>#{id}</foreach>" +
+            " GROUP BY hospital_id" +
+            "</script>")
+    List<HospitalBookmarkCount> countByHospitalIds(@Param("hospitalIds") List<Long> hospitalIds);
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
+import org.dev.hehe.domain.bookmark.HospitalBookmarkCount;
 import org.dev.hehe.domain.hospital.HospitalSummary;
 import org.dev.hehe.domain.hospital.HospitalTag;
 import org.dev.hehe.dto.hospital.HospitalClusterItem;
@@ -100,6 +101,14 @@ public class HospitalService {
                         Collectors.mapping(HospitalTag::getTagName, Collectors.toList())
                 ));
 
+        // 찜 수 일괄 조회 (N+1 방지)
+        Map<Long, Integer> bookmarkCountMap = bookmarkMapper.countByHospitalIds(hospitalIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        HospitalBookmarkCount::getHospitalId,
+                        HospitalBookmarkCount::getBookmarkCount
+                ));
+
         // 찜 여부 일괄 조회 (로그인 시에만)
         Set<Long> bookmarkedIds = userId != null
                 ? new HashSet<>(bookmarkMapper.findBookmarkedHospitalIds(userId, hospitalIds))
@@ -111,6 +120,7 @@ public class HospitalService {
                 .map(s -> HospitalListResponse.of(
                         s,
                         tagMap.getOrDefault(s.getHospitalId(), List.of()),
+                        bookmarkCountMap.getOrDefault(s.getHospitalId(), 0),
                         userId != null ? bookmarkedIds.contains(s.getHospitalId()) : null
                 ))
                 .toList();
@@ -134,14 +144,15 @@ public class HospitalService {
 
         List<String> tags = hospitalMapper.findTagNamesByHospitalId(hospitalId);
         List<HospitalEquipmentInfo> equipments = hospitalMapper.findEquipmentsByHospitalId(hospitalId);
+        int bookmarkCount = bookmarkMapper.countByHospitalId(hospitalId);
 
         // 찜 여부 조회 (로그인 시에만)
         Boolean isBookmarked = userId != null ? bookmarkMapper.existsBookmark(userId, hospitalId) : null;
 
-        log.debug("병원 상세 조회 완료 - hospitalId={}, tagCount={}, equipCount={}",
-                hospitalId, tags.size(), equipments.size());
+        log.debug("병원 상세 조회 완료 - hospitalId={}, tagCount={}, equipCount={}, bookmarkCount={}",
+                hospitalId, tags.size(), equipments.size(), bookmarkCount);
 
-        return HospitalDetailResponse.of(detail, tags, equipments, isBookmarked);
+        return HospitalDetailResponse.of(detail, tags, equipments, bookmarkCount, isBookmarked);
     }
 
     /**

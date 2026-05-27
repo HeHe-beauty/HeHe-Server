@@ -1,3 +1,6 @@
+server:
+  forward-headers-strategy: framework  # ALB HTTPS 종료 시 X-Forwarded-Proto 헤더 인식
+
 spring:
   application:
     name: hehe

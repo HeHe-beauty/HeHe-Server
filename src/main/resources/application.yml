@@ -41,7 +41,7 @@ jwt:
 cloud:
   aws:
     s3:
-      bucket: ${S3_BUCKET_NAME:hehe-service-bucket}
+      bucket: ${S3_BUCKET_NAME:hehe-main-service-bucket}
     region: ap-northeast-2
     credentials:
       access-key: ${AWS_ACCESS_KEY}

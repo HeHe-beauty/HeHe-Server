@@ -128,6 +128,7 @@ class BookmarkServiceTest {
 
         // then
         verify(bookmarkMapper).insertBookmark(1L, 101L);
+        verify(bookmarkMapper).incrementBookmarkCount(101L);
     }
 
     @Test
@@ -160,6 +161,7 @@ class BookmarkServiceTest {
 
         // then
         verify(bookmarkMapper).deleteBookmark(1L, 101L);
+        verify(bookmarkMapper).decrementBookmarkCount(101L);
     }
 
     @Test

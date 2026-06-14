@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 import org.dev.hehe.domain.bookmark.BookmarkedHospital;
 import org.dev.hehe.domain.bookmark.HospitalBookmarkCount;
 
@@ -96,27 +97,52 @@ public interface BookmarkMapper {
                                          @Param("hospitalIds") List<Long> hospitalIds);
 
     /**
-     * 특정 병원을 찜한 사용자 수 단건 조회
+     * 특정 병원의 찜 수 단건 조회 (tb_hospital_bookmark_count 기반)
      *
      * @param hospitalId 병원 ID
-     * @return 해당 병원의 찜 수
+     * @return 해당 병원의 찜 수 (행 없으면 0)
      */
-    @Select("SELECT COUNT(*) FROM tb_bookmark WHERE hospital_id = #{hospitalId}")
+    @Select("SELECT COALESCE((SELECT bookmark_count FROM tb_hospital_bookmark_count WHERE hospital_id = #{hospitalId}), 0)")
     int countByHospitalId(@Param("hospitalId") Long hospitalId);
 
     /**
-     * 병원 목록의 찜 수 배치 조회 (N+1 방지)
-     *
-     * <p>병원 ID 목록을 한 번에 조회하여 각 병원의 찜 수를 반환한다.</p>
+     * 병원 목록의 찜 수 배치 조회 (N+1 방지, tb_hospital_bookmark_count 기반)
      *
      * @param hospitalIds 조회할 병원 ID 목록
      * @return 병원별 찜 수 목록
      */
     @Select("<script>" +
-            "SELECT hospital_id, COUNT(*) AS bookmark_count FROM tb_bookmark " +
+            "SELECT hospital_id, bookmark_count FROM tb_hospital_bookmark_count " +
             "WHERE hospital_id IN " +
             "<foreach item='id' collection='hospitalIds' open='(' separator=',' close=')'>#{id}</foreach>" +
-            " GROUP BY hospital_id" +
             "</script>")
     List<HospitalBookmarkCount> countByHospitalIds(@Param("hospitalIds") List<Long> hospitalIds);
+
+    /**
+     * 병원 찜 수 증가 (찜 추가 시 호출)
+     *
+     * <p>행이 없으면 INSERT(1), 있으면 bookmark_count + 1 UPDATE.</p>
+     *
+     * @param hospitalId 병원 ID
+     */
+    @Insert("""
+            INSERT INTO tb_hospital_bookmark_count (hospital_id, bookmark_count)
+            VALUES (#{hospitalId}, 1)
+            ON DUPLICATE KEY UPDATE bookmark_count = bookmark_count + 1
+            """)
+    void incrementBookmarkCount(@Param("hospitalId") Long hospitalId);
+
+    /**
+     * 병원 찜 수 감소 (찜 삭제 시 호출)
+     *
+     * <p>음수 방지를 위해 GREATEST(0, bookmark_count - 1) 적용.</p>
+     *
+     * @param hospitalId 병원 ID
+     */
+    @Update("""
+            UPDATE tb_hospital_bookmark_count
+            SET bookmark_count = GREATEST(0, bookmark_count - 1)
+            WHERE hospital_id = #{hospitalId}
+            """)
+    void decrementBookmarkCount(@Param("hospitalId") Long hospitalId);
 }

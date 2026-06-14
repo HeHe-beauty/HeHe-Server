@@ -80,6 +80,7 @@ public class BookmarkService {
         }
 
         bookmarkMapper.insertBookmark(userId, hospitalId);
+        bookmarkMapper.incrementBookmarkCount(hospitalId);
         log.info("찜 추가 완료 - userId={}, hospitalId={}", userId, hospitalId);
     }
 
@@ -99,6 +100,7 @@ public class BookmarkService {
         }
 
         bookmarkMapper.deleteBookmark(userId, hospitalId);
+        bookmarkMapper.decrementBookmarkCount(hospitalId);
         log.info("찜 삭제 완료 - userId={}, hospitalId={}", userId, hospitalId);
     }
 }

@@ -106,7 +106,7 @@ class ArticleServiceTest {
     // =============================================
 
     @Test
-    @DisplayName("아티클 단건 조회 성공")
+    @DisplayName("아티클 단건 조회 성공 (태그·cAt·uAt 포함)")
     void getArticleById_success() {
         // given
         Article article = new Article();
@@ -114,17 +114,22 @@ class ArticleServiceTest {
         ReflectionTestUtils.setField(article, "title", "레이저 제모 완벽 가이드");
         ReflectionTestUtils.setField(article, "subTitle", "시작 전 알아야 할 것들");
         ReflectionTestUtils.setField(article, "thumbnailUrl", "https://example.com/thumb.jpg");
-        ReflectionTestUtils.setField(article, "content", "<p>레이저 제모 본문 HTML</p>");
+        ReflectionTestUtils.setField(article, "content", "## 레이저 제모란?\n본문 내용");
+
+        List<String> mockTags = List.of("제모", "피부관리");
 
         given(articleMapper.findByArticleId(1L)).willReturn(Optional.of(article));
+        given(articleMapper.findTagsByArticleId(1L)).willReturn(mockTags);
 
         // when
         ArticleResponse result = articleService.getArticleById(1L);
 
-        // then: DTO 변환 정상 확인
+        // then
         assertThat(result.getArticleId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("레이저 제모 완벽 가이드");
+        assertThat(result.getTags()).containsExactly("제모", "피부관리");
         verify(articleMapper).findByArticleId(1L);
+        verify(articleMapper).findTagsByArticleId(1L);
     }
 
     @Test

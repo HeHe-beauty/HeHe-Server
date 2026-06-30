@@ -69,7 +69,10 @@ public interface ArticleApiSpecification {
                                         "title": "레이저 제모 완벽 가이드",
                                         "subTitle": "시작 전 알아야 할 것들",
                                         "thumbnailUrl": "https://example.com/thumb.jpg",
-                                        "content": "<p>레이저 제모에 대한 본문 HTML 내용...</p>"
+                                        "content": "## 레이저 제모란?\\n레이저 제모에 대한 본문 내용...",
+                                        "tags": ["제모", "피부관리"],
+                                        "createdAt": "2025-01-01 12:00:00",
+                                        "updatedAt": "2025-06-01 09:00:00"
                                       }
                                     }
                                     """))

@@ -1,8 +1,10 @@
 package org.dev.hehe.mapper.article;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.dev.hehe.domain.article.Article;
+import org.dev.hehe.domain.article.ArticleTag;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,5 +34,14 @@ public interface ArticleMapper {
             WHERE article_id = #{articleId}
               AND is_active = true
             """)
-    Optional<Article> findByArticleId(Long articleId);
+    Optional<Article> findByArticleId(@Param("articleId") Long articleId);
+
+    /**
+     * article_id로 아티클 태그 목록 조회
+     *
+     * @param articleId 조회할 아티클 ID
+     * @return 태그명 목록
+     */
+    @Select("SELECT tag_name FROM tb_article_tag WHERE article_id = #{articleId}")
+    List<String> findTagsByArticleId(@Param("articleId") Long articleId);
 }

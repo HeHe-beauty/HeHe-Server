@@ -39,6 +39,7 @@ out/
 ### Project ###
 .claude/
 CLAUDE.md
+AGENTS.md
 application-local.yml
 /mysql_data/
 /docs/

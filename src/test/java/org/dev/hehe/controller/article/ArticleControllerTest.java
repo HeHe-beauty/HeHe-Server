@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
@@ -91,7 +92,7 @@ class ArticleControllerTest {
     // =============================================
 
     @Test
-    @DisplayName("GET /api/v1/articles/{articleId} - 단건 조회 성공")
+    @DisplayName("GET /api/v1/articles/{articleId} - 단건 조회 성공 (태그·cAt·uAt 포함)")
     void getArticle_success() throws Exception {
         // given
         ArticleResponse mockArticle = ArticleResponse.builder()
@@ -99,7 +100,10 @@ class ArticleControllerTest {
                 .title("레이저 제모 완벽 가이드")
                 .subTitle("시작 전 알아야 할 것들")
                 .thumbnailUrl("https://example.com/thumb.jpg")
-                .content("https://example.com/article/1")
+                .content("## 레이저 제모란?\n본문 내용")
+                .tags(List.of("제모", "피부관리"))
+                .createdAt(Timestamp.valueOf("2025-01-01 12:00:00"))
+                .updatedAt(Timestamp.valueOf("2025-06-01 09:00:00"))
                 .build();
         given(articleService.getArticleById(1L)).willReturn(mockArticle);
 
@@ -109,7 +113,11 @@ class ArticleControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.articleId").value(1))
-                .andExpect(jsonPath("$.data.title").value("레이저 제모 완벽 가이드"));
+                .andExpect(jsonPath("$.data.title").value("레이저 제모 완벽 가이드"))
+                .andExpect(jsonPath("$.data.tags").isArray())
+                .andExpect(jsonPath("$.data.tags[0]").value("제모"))
+                .andExpect(jsonPath("$.data.createdAt").value("2025-01-01 12:00:00"))
+                .andExpect(jsonPath("$.data.updatedAt").value("2025-06-01 09:00:00"));
     }
 
     @Test

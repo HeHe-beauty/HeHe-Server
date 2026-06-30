@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.04.29_ (FCM 테스트 발송 API 추가)
+_last update : 26.06.30_ (아티클 단건 조회 응답에 tags·createdAt·updatedAt 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 

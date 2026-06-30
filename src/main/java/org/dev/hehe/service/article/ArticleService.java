@@ -48,7 +48,11 @@ public class ArticleService {
     public ArticleResponse getArticleById(Long articleId) {
         log.debug("아티클 단건 조회 - articleId={}", articleId);
         return articleMapper.findByArticleId(articleId)
-                .map(ArticleResponse::from)
+                .map(article -> {
+                    List<String> tags = articleMapper.findTagsByArticleId(articleId);
+                    log.debug("아티클 태그 조회 완료 - articleId={}, tagCount={}", articleId, tags.size());
+                    return ArticleResponse.of(article, tags);
+                })
                 .orElseThrow(() -> {
                     log.warn("아티클을 찾을 수 없음 - articleId={}", articleId);
                     return new CommonException(ErrorCode.ARTICLE_NOT_FOUND);

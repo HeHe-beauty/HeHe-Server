@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.06.30_ (아티클 단건 조회 응답에 tags·createdAt·updatedAt 추가)
+_last update : 26.07.06_ (하트 API 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -141,6 +141,12 @@ EC2 t3.micro (ap-northeast-2c)
 |---|---|---|
 | POST | `/api/v1/push-tokens` | FCM 토큰 등록/갱신 (JWT 필요) |
 | DELETE | `/api/v1/push-tokens` | FCM 토큰 비활성화 (JWT 필요) |
+
+### Heart
+| Method | Endpoint | 설명 |
+|---|---|---|
+| POST | `/api/v1/hearts` | 하트 추가 (익명) |
+| GET | `/api/v1/hearts` | 누적 하트 수 조회 |
 
 ### Upload
 | Method | Endpoint | 설명 |

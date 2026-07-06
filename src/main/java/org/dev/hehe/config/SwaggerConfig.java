@@ -115,6 +115,15 @@ public class SwaggerConfig {
                 .build();
     }
 
+    /** 하트 */
+    @Bean
+    public GroupedOpenApi heartApi() {
+        return GroupedOpenApi.builder()
+                .group("08. Heart")
+                .pathsToMatch("/api/v1/hearts/**")
+                .build();
+    }
+
     /** 파일 업로드 */
     @Bean
     public GroupedOpenApi uploadApi() {

@@ -145,4 +145,12 @@ public interface BookmarkMapper {
             WHERE hospital_id = #{hospitalId}
             """)
     void decrementBookmarkCount(@Param("hospitalId") Long hospitalId);
+
+    /**
+     * 유저의 찜 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("DELETE FROM tb_bookmark WHERE user_id = #{userId}")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

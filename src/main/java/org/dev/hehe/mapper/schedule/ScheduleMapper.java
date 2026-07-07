@@ -234,4 +234,26 @@ public interface ScheduleMapper {
      */
     @Select("SELECT COUNT(*) FROM tb_schedule WHERE user_id = #{userId} AND visit_time >= #{nowTime}")
     int countUpcomingSchedules(@Param("userId") Long userId, @Param("nowTime") long nowTime);
+
+    /**
+     * 유저의 일정에 딸린 알림 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * <p>schedule_id를 매개로 JOIN하여 삭제한다. 일정 삭제보다 먼저 호출해야 한다.</p>
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("""
+            DELETE sa FROM tb_schedule_alarm sa
+            JOIN tb_schedule s ON sa.schedule_id = s.schedule_id
+            WHERE s.user_id = #{userId}
+            """)
+    void deleteAllAlarmsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 유저의 일정 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("DELETE FROM tb_schedule WHERE user_id = #{userId}")
+    void deleteAllSchedulesByUserId(@Param("userId") Long userId);
 }

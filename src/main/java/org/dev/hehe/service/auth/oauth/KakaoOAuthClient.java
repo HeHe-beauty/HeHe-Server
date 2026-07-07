@@ -26,6 +26,9 @@ public class KakaoOAuthClient {
     @Value("${oauth.kakao.user-info-uri}")
     private String userInfoUri;
 
+    @Value("${oauth.kakao.unlink-uri}")
+    private String unlinkUri;
+
     /**
      * 카카오 유저 정보 조회
      *
@@ -55,6 +58,33 @@ public class KakaoOAuthClient {
             log.warn("[Kakao OAuth] 유저 정보 조회 실패 - status: {}, body: {}",
                     e.getStatusCode(), e.getResponseBodyAsString());
             throw new CommonException(ErrorCode.OAUTH_USER_INFO_FAILED);
+        }
+    }
+
+    /**
+     * 카카오 연결 끊기 (unlink) — 회원 탈퇴 시 호출
+     *
+     * <p>유저 access token으로 호출하면 admin key 없이도 연결을 해제할 수 있다.</p>
+     *
+     * @param accessToken FE가 탈퇴 시점에 재획득한 카카오 access token
+     * @return unlink 성공 여부
+     */
+    public boolean unlink(String accessToken) {
+        try {
+            webClient.post()
+                    .uri(unlinkUri)
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            log.info("[Kakao OAuth] 연결 끊기 성공");
+            return true;
+
+        } catch (WebClientResponseException e) {
+            log.warn("[Kakao OAuth] 연결 끊기 실패 - status: {}, body: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            return false;
         }
     }
 

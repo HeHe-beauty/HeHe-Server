@@ -1,5 +1,6 @@
 package org.dev.hehe.mapper.pushtoken;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
@@ -49,4 +50,20 @@ public interface PushTokenMapper {
      */
     @Update("UPDATE tb_push_token SET is_active = 0, updated_at = NOW() WHERE user_id = #{userId} AND token = #{token}")
     int deactivateToken(@Param("userId") Long userId, @Param("token") String token);
+
+    /**
+     * 유저의 FCM 토큰 전체 소프트 비활성화 (회원 탈퇴 시 호출)
+     *
+     * @param userId 유저 ID
+     */
+    @Update("UPDATE tb_push_token SET is_active = 0, updated_at = NOW() WHERE user_id = #{userId} AND is_active = 1")
+    void deactivateAllByUserId(@Param("userId") Long userId);
+
+    /**
+     * 유저의 FCM 토큰 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("DELETE FROM tb_push_token WHERE user_id = #{userId}")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

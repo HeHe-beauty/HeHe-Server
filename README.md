@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.07.06_ (하트 API 추가)
+_last update : 26.07.07_ (회원 탈퇴 API 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -107,6 +107,7 @@ EC2 t3.micro (ap-northeast-2c)
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/v1/users/summary` | 마이페이지 요약 조회 (JWT 필요) |
+| DELETE | `/api/v1/users` | 회원 탈퇴 (소프트 삭제, JWT 필요) |
 
 ### Bookmark
 | Method | Endpoint | 설명 |
@@ -157,6 +158,7 @@ EC2 t3.micro (ap-northeast-2c)
 
 ## 미구현 (예정)
 
-- Auth / JWT (소셜 로그인, Refresh Token)
-- User (회원가입 · 탈퇴 · 정보 수정)
+- User (정보 수정)
+- ~~Auth / JWT (소셜 로그인, Refresh Token)~~ → 구현 완료
+- ~~User 회원 탈퇴~~ → 구현 완료 (소프트 삭제 + 30일 후 하드 삭제 배치)
 - ~~FCM 푸시 알림~~ → 구현 완료 (스케줄 알람 시각 기준 자동 발송, 야간 필터, 만료 토큰 자동 비활성화)

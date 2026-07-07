@@ -10,10 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -94,6 +99,49 @@ class UserControllerTest {
     @DisplayName("GET /api/v1/users/summary - 인증 토큰 없이 호출 시 4xx")
     void getSummary_unauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/users/summary"))
+                .andDo(print())
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/users - body 없이 회원 탈퇴 성공")
+    void withdraw_success() throws Exception {
+        // given
+        willDoNothing().given(userService).deleteAccount(eq(TEST_USER_ID), any());
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/users")
+                        .header("Authorization", "Bearer " + TEST_TOKEN))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/users - 소셜 unlink 정보 포함 회원 탈퇴 성공")
+    void withdraw_withUnlinkInfo_success() throws Exception {
+        // given
+        willDoNothing().given(userService).deleteAccount(eq(TEST_USER_ID), any());
+
+        // when & then
+        mockMvc.perform(delete("/api/v1/users")
+                        .header("Authorization", "Bearer " + TEST_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "KAKAO",
+                                  "providerAccessToken": "kakao-access-token"
+                                }
+                                """))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("DELETE /api/v1/users - 인증 토큰 없이 호출 시 4xx")
+    void withdraw_unauthorized() throws Exception {
+        mockMvc.perform(delete("/api/v1/users"))
                 .andDo(print())
                 .andExpect(status().is4xxClientError());
     }

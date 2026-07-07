@@ -1,5 +1,6 @@
 package org.dev.hehe.mapper.recentview;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -48,4 +49,12 @@ public interface RecentViewMapper {
     @Insert("INSERT INTO tb_recent_view (user_id, hospital_id) VALUES (#{userId}, #{hospitalId}) " +
             "ON DUPLICATE KEY UPDATE viewed_at = NOW()")
     void upsertRecentView(@Param("userId") Long userId, @Param("hospitalId") Long hospitalId);
+
+    /**
+     * 유저의 최근 본 병원 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("DELETE FROM tb_recent_view WHERE user_id = #{userId}")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

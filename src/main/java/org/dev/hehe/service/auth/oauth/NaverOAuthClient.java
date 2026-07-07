@@ -26,6 +26,15 @@ public class NaverOAuthClient {
     @Value("${oauth.naver.user-info-uri}")
     private String userInfoUri;
 
+    @Value("${oauth.naver.unlink-uri}")
+    private String unlinkUri;
+
+    @Value("${oauth.naver.client-id}")
+    private String clientId;
+
+    @Value("${oauth.naver.client-secret}")
+    private String clientSecret;
+
     /**
      * 네이버 유저 정보 조회
      *
@@ -68,6 +77,40 @@ public class NaverOAuthClient {
             log.warn("[Naver OAuth] 유저 정보 조회 실패 - status: {}, body: {}",
                     e.getStatusCode(), e.getResponseBodyAsString());
             throw new CommonException(ErrorCode.OAUTH_USER_INFO_FAILED);
+        }
+    }
+
+    /**
+     * 네이버 연결 끊기 (unlink) — 회원 탈퇴 시 호출
+     *
+     * <p>네이버 unlink는 카카오와 달리 유저 access token만으로는 호출 불가하고,
+     * 앱의 client_id/client_secret을 함께 요구한다.</p>
+     *
+     * @param accessToken FE가 탈퇴 시점에 재획득한 네이버 access token
+     * @return unlink 성공 여부
+     */
+    public boolean unlink(String accessToken) {
+        try {
+            Map<?, ?> response = webClient.get()
+                    .uri(unlinkUri + "?grant_type=delete&client_id={clientId}&client_secret={clientSecret}"
+                                    + "&access_token={accessToken}&service_provider=NAVER",
+                            clientId, clientSecret, accessToken)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            boolean success = "success".equals(response.get("result"));
+            if (success) {
+                log.info("[Naver OAuth] 연결 끊기 성공");
+            } else {
+                log.warn("[Naver OAuth] 연결 끊기 실패 - 응답: {}", response);
+            }
+            return success;
+
+        } catch (WebClientResponseException e) {
+            log.warn("[Naver OAuth] 연결 끊기 실패 - status: {}, body: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            return false;
         }
     }
 

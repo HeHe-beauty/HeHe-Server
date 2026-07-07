@@ -23,6 +23,7 @@ public class User {
     private String nickname;
     private String fcmToken;
     private String status;
+    private String unlinkStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

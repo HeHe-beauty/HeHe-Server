@@ -1,5 +1,6 @@
 package org.dev.hehe.mapper.contact;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -78,4 +79,12 @@ public interface ContactMapper {
      */
     @Select("SELECT COUNT(*) FROM tb_contact_history WHERE user_id = #{userId} AND is_deleted = 0")
     int countContacts(@Param("userId") Long userId);
+
+    /**
+     * 유저의 문의 내역 전체 물리 삭제 (회원 탈퇴 하드 삭제 배치 전용)
+     *
+     * @param userId 유저 ID
+     */
+    @Delete("DELETE FROM tb_contact_history WHERE user_id = #{userId}")
+    void deleteAllByUserId(@Param("userId") Long userId);
 }

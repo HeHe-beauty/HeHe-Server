@@ -71,7 +71,8 @@ public interface HospitalApiSpecification {
             description = """
                     클러스터 클릭 시 하단 시트에 표시할 병원 목록을 반환합니다.
 
-                    - lat, lng, precision 은 지도 클러스터 API 응답값을 그대로 전달합니다.
+                    - 요청 파라미터 lat, lng, precision 은 지도 클러스터 API 응답값을 그대로 전달합니다.
+                    - 응답의 lat, lng 는 요청 파라미터(클러스터 반올림 좌표)가 아닌 병원 고유 좌표입니다.
                     - equipId 를 전달하면 해당 장비를 보유한 병원만 필터링됩니다.
                     - **isBookmarked**: 로그인 상태(JWT 전달)에서만 포함됩니다. 비로그인 시 해당 필드 자체가 응답에 포함되지 않습니다.
                     """
@@ -90,6 +91,8 @@ public interface HospitalApiSpecification {
                                                   "hospitalId": 101,
                                                   "name": "강남 제모 클리닉",
                                                   "address": "서울 강남구 역삼동 123-4",
+                                                  "lat": 37.512,
+                                                  "lng": 127.059,
                                                   "tags": ["여성원장", "주차가능"],
                                                   "bookmarkCount": 42,
                                                   "isBookmarked": true
@@ -105,6 +108,8 @@ public interface HospitalApiSpecification {
                                                   "hospitalId": 101,
                                                   "name": "강남 제모 클리닉",
                                                   "address": "서울 강남구 역삼동 123-4",
+                                                  "lat": 37.512,
+                                                  "lng": 127.059,
                                                   "tags": ["여성원장", "주차가능"],
                                                   "bookmarkCount": 42
                                                 }

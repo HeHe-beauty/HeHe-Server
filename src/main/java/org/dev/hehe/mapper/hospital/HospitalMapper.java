@@ -60,10 +60,11 @@ public interface HospitalMapper {
      * @param lng       반올림된 경도 (API 1 응답값 그대로)
      * @param precision 좌표 반올림 자릿수 (API 1 응답값 그대로)
      * @param equipId   장비 필터 (null 이면 전체)
-     * @return 병원 기본 정보 목록
+     * @return 병원 기본 정보 목록 (lat/lng는 클러스터 반올림 좌표가 아닌 병원 고유 좌표)
      */
     @Select("<script>" +
-            "SELECT h.hospital_id, h.name, h.address " +
+            "SELECT h.hospital_id, h.name, h.address, " +
+            "       ST_X(h.location) AS lat, ST_Y(h.location) AS lng " +
             "FROM tb_hospital h " +
             "<if test='equipId != null'>" +
             "INNER JOIN tb_hospital_equipment he " +

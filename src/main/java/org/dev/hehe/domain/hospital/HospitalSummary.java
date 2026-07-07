@@ -17,4 +17,10 @@ public class HospitalSummary {
 
     /** 도로명 주소 */
     private String address;
+
+    /** 위도 (tb_hospital.location 고유 좌표, ST_X) */
+    private Double lat;
+
+    /** 경도 (tb_hospital.location 고유 좌표, ST_Y) */
+    private Double lng;
 }

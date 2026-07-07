@@ -25,6 +25,12 @@ public class HospitalListResponse {
     @Schema(description = "도로명 주소", example = "서울 강남구 역삼동 123-4")
     private String address;
 
+    @Schema(description = "위도 (병원 고유 좌표)", example = "37.512")
+    private Double lat;
+
+    @Schema(description = "경도 (병원 고유 좌표)", example = "127.059")
+    private Double lng;
+
     @Schema(description = "태그 목록", example = "[\"여성원장\", \"주차가능\"]")
     private List<String> tags;
 
@@ -50,6 +56,8 @@ public class HospitalListResponse {
                 .hospitalId(summary.getHospitalId())
                 .name(summary.getName())
                 .address(summary.getAddress())
+                .lat(summary.getLat())
+                .lng(summary.getLng())
                 .tags(tags)
                 .bookmarkCount(bookmarkCount)
                 .isBookmarked(isBookmarked)

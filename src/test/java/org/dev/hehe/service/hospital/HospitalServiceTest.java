@@ -141,8 +141,8 @@ class HospitalServiceTest {
     @DisplayName("클러스터 병원 목록 조회 성공 - 태그 포함")
     void getHospitalsByCluster_success_withTags() {
         // given
-        HospitalSummary summary1 = createSummary(101L, "강남 제모 클리닉", "서울 강남구 역삼동 1");
-        HospitalSummary summary2 = createSummary(102L, "역삼 스킨케어", "서울 강남구 역삼동 2");
+        HospitalSummary summary1 = createSummary(101L, "강남 제모 클리닉", "서울 강남구 역삼동 1", 37.4979, 127.0276);
+        HospitalSummary summary2 = createSummary(102L, "역삼 스킨케어", "서울 강남구 역삼동 2", 37.5013, 127.0396);
 
         HospitalTag tag1 = createTag(101L, "여성원장");
         HospitalTag tag2 = createTag(101L, "주차가능");
@@ -170,6 +170,12 @@ class HospitalServiceTest {
         assertThat(result.get(0).getBookmarkCount()).isEqualTo(5);
         assertThat(result.get(1).getTags()).containsExactly("야간진료");
         assertThat(result.get(1).getBookmarkCount()).isZero();
+
+        // lat/lng는 클러스터 반올림 좌표(37.52, 127.05)가 아닌 병원 고유 좌표를 그대로 반환해야 한다
+        assertThat(result.get(0).getLat()).isEqualTo(37.4979);
+        assertThat(result.get(0).getLng()).isEqualTo(127.0276);
+        assertThat(result.get(1).getLat()).isEqualTo(37.5013);
+        assertThat(result.get(1).getLng()).isEqualTo(127.0396);
     }
 
     @Test
@@ -246,11 +252,13 @@ class HospitalServiceTest {
         return item;
     }
 
-    private HospitalSummary createSummary(Long hospitalId, String name, String address) {
+    private HospitalSummary createSummary(Long hospitalId, String name, String address, Double lat, Double lng) {
         HospitalSummary summary = new HospitalSummary();
         ReflectionTestUtils.setField(summary, "hospitalId", hospitalId);
         ReflectionTestUtils.setField(summary, "name", name);
         ReflectionTestUtils.setField(summary, "address", address);
+        ReflectionTestUtils.setField(summary, "lat", lat);
+        ReflectionTestUtils.setField(summary, "lng", lng);
         return summary;
     }
 

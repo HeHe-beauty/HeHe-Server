@@ -130,7 +130,8 @@ class HospitalControllerTest {
         List<HospitalListResponse> mockList = List.of(
                 HospitalListResponse.builder()
                         .hospitalId(101L).name("강남 제모 클리닉")
-                        .address("서울 강남구 역삼동 1").tags(List.of("여성원장", "주차가능"))
+                        .address("서울 강남구 역삼동 1").lat(37.4979).lng(127.0276)
+                        .tags(List.of("여성원장", "주차가능"))
                         .bookmarkCount(42).isBookmarked(true)
                         .build(),
                 HospitalListResponse.builder()
@@ -152,6 +153,8 @@ class HospitalControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].hospitalId").value(101))
                 .andExpect(jsonPath("$.data[0].name").value("강남 제모 클리닉"))
+                .andExpect(jsonPath("$.data[0].lat").value(37.4979))
+                .andExpect(jsonPath("$.data[0].lng").value(127.0276))
                 .andExpect(jsonPath("$.data[0].tags[0]").value("여성원장"))
                 .andExpect(jsonPath("$.data[0].bookmarkCount").value(42))
                 .andExpect(jsonPath("$.data[0].isBookmarked").value(true))

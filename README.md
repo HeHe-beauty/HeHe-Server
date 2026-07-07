@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.07.07_ (회원 탈퇴 API 추가)
+_last update : 26.07.07_ (병원 목록 API 응답에 lat/lng 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -100,7 +100,7 @@ EC2 t3.micro (ap-northeast-2c)
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/v1/hospitals/map` | 지도 뷰포트 내 클러스터 조회 |
-| GET | `/api/v1/hospitals` | 클러스터 내 병원 목록 조회 |
+| GET | `/api/v1/hospitals` | 클러스터 내 병원 목록 조회 (병원 고유 lat/lng 포함) |
 | GET | `/api/v1/hospitals/{hospitalId}` | 병원 상세 조회 |
 
 ### User

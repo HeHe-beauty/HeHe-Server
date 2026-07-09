@@ -20,6 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -142,6 +143,34 @@ class UserControllerTest {
     @DisplayName("DELETE /api/v1/users - 인증 토큰 없이 호출 시 4xx")
     void withdraw_unauthorized() throws Exception {
         mockMvc.perform(delete("/api/v1/users"))
+                .andDo(print())
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/users/agreements - 알림 동의 변경 성공")
+    void updateAgreements_success() throws Exception {
+        // given
+        willDoNothing().given(userService).updateAgreements(eq(TEST_USER_ID), any());
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/users/agreements")
+                        .header("Authorization", "Bearer " + TEST_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "pushAgreed": true, "nightAgreed": false }
+                                """))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/users/agreements - 인증 토큰 없이 호출 시 4xx")
+    void updateAgreements_unauthorized() throws Exception {
+        mockMvc.perform(patch("/api/v1/users/agreements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andDo(print())
                 .andExpect(status().is4xxClientError());
     }

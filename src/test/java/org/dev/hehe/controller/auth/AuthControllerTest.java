@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
@@ -58,7 +59,7 @@ class AuthControllerTest {
     void login_success() throws Exception {
         // given
         AuthLoginResponse.UserInfo userInfo = new AuthLoginResponse.UserInfo(1L, "홍길동");
-        AuthLoginResponse response = new AuthLoginResponse("access_token", "refresh_token", userInfo);
+        AuthLoginResponse response = AuthLoginResponse.of("access_token", "refresh_token", userInfo);
 
         given(authService.login(anyString(), anyString())).willReturn(response);
 
@@ -74,10 +75,32 @@ class AuthControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.exists").value(true))
                 .andExpect(jsonPath("$.data.accessToken").value("access_token"))
                 .andExpect(jsonPath("$.data.refreshToken").value("refresh_token"))
                 .andExpect(jsonPath("$.data.user.userId").value(1))
                 .andExpect(jsonPath("$.data.user.nickname").value("홍길동"));
+    }
+
+    @Test
+    @DisplayName("소셜 로그인 - 미가입 유저면 exists:false만 반환 (200)")
+    void login_userNotFound_returnsExistsFalse() throws Exception {
+        given(authService.login(anyString(), anyString())).willReturn(AuthLoginResponse.notFound());
+
+        Map<String, String> request = Map.of(
+                "provider", "kakao",
+                "accessToken", "provider_token"
+        );
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.exists").value(false))
+                .andExpect(jsonPath("$.data.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.data.user").doesNotExist());
     }
 
     @Test
@@ -131,6 +154,80 @@ class AuthControllerTest {
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errorCode").value("AU004"));
+    }
+
+    // ── POST /api/v1/auth/signup ─────────────────────────────────────────────
+
+    @Test
+    @DisplayName("회원가입 성공 - 200 응답 및 토큰 반환")
+    void signup_success() throws Exception {
+        AuthLoginResponse.UserInfo userInfo = new AuthLoginResponse.UserInfo(1L, "홍길동");
+        AuthLoginResponse response = AuthLoginResponse.of("access_token", "refresh_token", userInfo);
+
+        given(authService.signup(anyString(), anyString(), anyBoolean(), anyBoolean(), anyBoolean(),
+                anyBoolean(), anyString())).willReturn(response);
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "kakao",
+                                  "accessToken": "provider_token",
+                                  "pushAgreed": true,
+                                  "nightAgreed": false,
+                                  "mktAgreed": false,
+                                  "isOverAge": true,
+                                  "termsVersion": "v1.0.0"
+                                }
+                                """))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.exists").value(true))
+                .andExpect(jsonPath("$.data.accessToken").value("access_token"));
+    }
+
+    @Test
+    @DisplayName("회원가입 - 14세 이상 동의 거부 시 400 응답")
+    void signup_isOverAgeFalse_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "kakao",
+                                  "accessToken": "provider_token",
+                                  "pushAgreed": true,
+                                  "nightAgreed": false,
+                                  "mktAgreed": false,
+                                  "isOverAge": false,
+                                  "termsVersion": "v1.0.0"
+                                }
+                                """))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("C002"));
+    }
+
+    @Test
+    @DisplayName("회원가입 - termsVersion 누락 시 400 응답")
+    void signup_missingTermsVersion_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "provider": "kakao",
+                                  "accessToken": "provider_token",
+                                  "pushAgreed": true,
+                                  "nightAgreed": false,
+                                  "mktAgreed": false,
+                                  "isOverAge": true
+                                }
+                                """))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("C002"));
     }
 
     // ── POST /api/v1/auth/token/refresh ─────────────────────────────────────

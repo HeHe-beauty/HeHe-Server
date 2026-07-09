@@ -53,7 +53,7 @@ public class DevAuthController {
 
         log.info("[DevAuth] 개발용 로그인 - userId={}, nickname={}", userId, user.getNickname());
 
-        return ApiResult.ok(new AuthLoginResponse(
+        return ApiResult.ok(AuthLoginResponse.of(
                 accessToken,
                 refreshToken,
                 new AuthLoginResponse.UserInfo(userId, user.getNickname())

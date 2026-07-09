@@ -1,14 +1,17 @@
 package org.dev.hehe.controller.user;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.response.ApiResult;
 import org.dev.hehe.config.auth.LoginUser;
+import org.dev.hehe.dto.user.UserAgreementsRequest;
 import org.dev.hehe.dto.user.UserSummaryResponse;
 import org.dev.hehe.dto.user.UserWithdrawRequest;
 import org.dev.hehe.service.user.UserService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +43,16 @@ public class UserController implements UserApiSpecification {
                                           @RequestBody(required = false) UserWithdrawRequest request) {
         log.info("[DELETE] /api/v1/users - userId={}", userId);
         userService.deleteAccount(userId, request);
+        return ApiResult.ok(null);
+    }
+
+    /** 알림 동의 변경 (푸시/야간/마케팅) */
+    @Override
+    @PatchMapping("/agreements")
+    public ApiResult<Void> updateAgreements(@LoginUser Long userId,
+                                             @Valid @RequestBody UserAgreementsRequest request) {
+        log.info("[PATCH] /api/v1/users/agreements - userId={}", userId);
+        userService.updateAgreements(userId, request);
         return ApiResult.ok(null);
     }
 }

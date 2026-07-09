@@ -22,7 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -77,7 +77,7 @@ class AuthServiceTest {
     // ── login ────────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("카카오 기존 유저 로그인 성공 - INSERT 없이 JWT 발급")
+    @DisplayName("카카오 기존 유저 로그인 성공 - exists:true, JWT 발급")
     void login_kakao_existingUser_success() {
         // given
         String provider = "kakao";
@@ -100,19 +100,19 @@ class AuthServiceTest {
         AuthLoginResponse response = authService.login(provider, providerToken);
 
         // then
+        assertThat(response.exists()).isTrue();
         assertThat(response.accessToken()).isEqualTo("access_token");
         assertThat(response.refreshToken()).isEqualTo("refresh_token");
         assertThat(response.user().userId()).isEqualTo(userId);
         assertThat(response.user().nickname()).isEqualTo(nickname);
 
-        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString());
         verify(userMapper).updateNickname(userId, nickname);
         verify(redisTokenService).save(userId, "refresh_token");
     }
 
     @Test
-    @DisplayName("네이버 신규 유저 로그인 성공 - INSERT 후 JWT 발급")
-    void login_naver_newUser_success() {
+    @DisplayName("네이버 미가입 유저 로그인 시도 - exists:false만 반환, INSERT/JWT 발급 없음")
+    void login_naver_userNotFound_returnsExistsFalse() {
         // given
         String provider = "naver";
         String providerToken = "naver_token";
@@ -123,21 +123,21 @@ class AuthServiceTest {
         given(naverOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
         given(userMapper.findByProviderAndSocialId("NAVER", "naver_social_1"))
                 .willReturn(Optional.empty());
-        given(jwtProvider.generateAccessToken(anyLong())).willReturn("access_token");
-        given(jwtProvider.generateRefreshToken(anyLong())).willReturn("refresh_token");
-        willDoNothing().given(userMapper).insertUser(anyLong(), anyString(), anyString(), anyString());
-        willDoNothing().given(redisTokenService).save(anyLong(), anyString());
 
         // when
         AuthLoginResponse response = authService.login(provider, providerToken);
 
         // then
-        assertThat(response.accessToken()).isEqualTo("access_token");
-        assertThat(response.refreshToken()).isEqualTo("refresh_token");
-        assertThat(response.user().nickname()).isEqualTo(nickname);
+        assertThat(response.exists()).isFalse();
+        assertThat(response.accessToken()).isNull();
+        assertThat(response.refreshToken()).isNull();
+        assertThat(response.user()).isNull();
 
-        verify(userMapper).insertUser(anyLong(), eq("naver_social_1"), eq("NAVER"), eq(nickname));
+        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(),
+                anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyString());
         verify(userMapper, never()).updateNickname(anyLong(), anyString());
+        verify(jwtProvider, never()).generateAccessToken(anyLong());
+        verify(redisTokenService, never()).save(anyLong(), anyString());
     }
 
     @Test
@@ -147,6 +147,69 @@ class AuthServiceTest {
                 .isInstanceOf(CommonException.class)
                 .satisfies(ex -> assertThat(((CommonException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
+    }
+
+    // ── signup ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("회원가입 성공 - 신규 유저 INSERT 후 JWT 발급")
+    void signup_newUser_success() {
+        // given
+        String provider = "kakao";
+        String providerToken = "kakao_token";
+        String nickname = "홍길동";
+
+        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname);
+
+        given(kakaoOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
+        given(userMapper.findByProviderAndSocialId("KAKAO", "kakao_social_1"))
+                .willReturn(Optional.empty());
+        given(jwtProvider.generateAccessToken(anyLong())).willReturn("access_token");
+        given(jwtProvider.generateRefreshToken(anyLong())).willReturn("refresh_token");
+
+        // when
+        AuthLoginResponse response = authService.signup(
+                provider, providerToken, true, false, false, true, "v1.0.0");
+
+        // then
+        assertThat(response.exists()).isTrue();
+        assertThat(response.accessToken()).isEqualTo("access_token");
+        assertThat(response.user().nickname()).isEqualTo(nickname);
+
+        verify(userMapper).insertUser(anyLong(), eq("kakao_social_1"), eq("KAKAO"), eq(nickname),
+                eq(true), eq(false), eq(false), eq(true), eq("v1.0.0"));
+        verify(redisTokenService).save(anyLong(), eq("refresh_token"));
+    }
+
+    @Test
+    @DisplayName("회원가입 - 이미 가입된 유저면 INSERT 없이 idempotent하게 로그인 처리")
+    void signup_existingUser_idempotent() {
+        // given
+        String provider = "kakao";
+        String providerToken = "kakao_token";
+        Long userId = 1000L;
+        String nickname = "홍길동";
+
+        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname);
+        User existingUser = mockUser(userId, nickname);
+
+        given(kakaoOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
+        given(userMapper.findByProviderAndSocialId("KAKAO", "kakao_social_1"))
+                .willReturn(Optional.of(existingUser));
+        given(jwtProvider.generateAccessToken(userId)).willReturn("access_token");
+        given(jwtProvider.generateRefreshToken(userId)).willReturn("refresh_token");
+
+        // when
+        AuthLoginResponse response = authService.signup(
+                provider, providerToken, true, false, false, true, "v1.0.0");
+
+        // then
+        assertThat(response.exists()).isTrue();
+        assertThat(response.user().userId()).isEqualTo(userId);
+
+        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(),
+                anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyString());
+        verify(redisTokenService).save(userId, "refresh_token");
     }
 
     // ── logout ───────────────────────────────────────────────────────────────

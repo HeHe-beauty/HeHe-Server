@@ -133,4 +133,13 @@ public class SwaggerConfig {
                 .build();
     }
 
+    /** 약관 / 정책 */
+    @Bean
+    public GroupedOpenApi legalDocumentApi() {
+        return GroupedOpenApi.builder()
+                .group("09. LegalDocument")
+                .pathsToMatch("/api/v1/legal-documents/**")
+                .build();
+    }
+
 }

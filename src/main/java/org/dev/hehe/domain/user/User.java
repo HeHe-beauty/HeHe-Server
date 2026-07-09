@@ -24,6 +24,11 @@ public class User {
     private String fcmToken;
     private String status;
     private String unlinkStatus;
+    private Boolean pushAgreed;
+    private Boolean nightAgreed;
+    private Boolean mktAgreed;
+    private Boolean isOverAge;
+    private String termsVersion;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

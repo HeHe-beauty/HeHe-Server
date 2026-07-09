@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.07.07_ (병원 목록 API 응답에 lat/lng 추가)
+_last update : 26.07.09_ (로그인/회원가입 API 분리, 알림 동의 변경 API 추가, 약관/정책 조회 API 추가)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -108,6 +108,7 @@ EC2 t3.micro (ap-northeast-2c)
 |---|---|---|
 | GET | `/api/v1/users/summary` | 마이페이지 요약 조회 (JWT 필요) |
 | DELETE | `/api/v1/users` | 회원 탈퇴 (소프트 삭제, JWT 필요) |
+| PATCH | `/api/v1/users/agreements` | 알림 동의 변경 (push/night/mkt, JWT 필요) |
 
 ### Bookmark
 | Method | Endpoint | 설명 |
@@ -125,7 +126,8 @@ EC2 t3.micro (ap-northeast-2c)
 ### Auth
 | Method | Endpoint | 설명 |
 |---|---|---|
-| POST | `/api/v1/auth/login` | 소셜 로그인/회원가입 |
+| POST | `/api/v1/auth/login` | 소셜 로그인 (미가입 시 exists:false 반환, 자동가입 안 함) |
+| POST | `/api/v1/auth/signup` | 회원가입 (동의값 포함) |
 | POST | `/api/v1/auth/logout` | 로그아웃 (JWT 필요) |
 | POST | `/api/v1/auth/token/refresh` | Access Token 재발급 |
 | POST | `/api/v1/auth/dev-login` | **(local 전용)** OAuth 없이 userId로 JWT 발급 |
@@ -153,6 +155,11 @@ EC2 t3.micro (ap-northeast-2c)
 | Method | Endpoint | 설명 |
 |---|---|---|
 | POST | `/api/v1/upload/image` | S3 이미지 업로드 |
+
+### LegalDocument
+| Method | Endpoint | 설명 |
+|---|---|---|
+| GET | `/api/v1/legal-documents/{type}` | 약관/정책 최신 버전 조회 (인증 불필요) |
 
 ---
 

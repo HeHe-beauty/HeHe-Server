@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.common.exception.ErrorCode;
 import org.dev.hehe.domain.user.User;
+import org.dev.hehe.dto.user.UserAgreementsRequest;
 import org.dev.hehe.dto.user.UserSummaryResponse;
 import org.dev.hehe.dto.user.UserWithdrawRequest;
 import org.dev.hehe.mapper.bookmark.BookmarkMapper;
@@ -120,6 +121,18 @@ public class UserService {
         };
 
         return success ? UNLINK_STATUS_SUCCESS : UNLINK_STATUS_FAILED;
+    }
+
+    /**
+     * 알림 동의 여부 변경 (부분 수정 — null인 필드는 기존값 유지)
+     *
+     * @param userId  JWT에서 추출한 유저 ID
+     * @param request 변경할 동의값 (push/night/mkt, 각각 선택)
+     */
+    public void updateAgreements(Long userId, UserAgreementsRequest request) {
+        userMapper.updateAgreements(userId, request.getPushAgreed(), request.getNightAgreed(), request.getMktAgreed());
+        log.info("알림 동의 변경 완료 - userId={}, pushAgreed={}, nightAgreed={}, mktAgreed={}",
+                userId, request.getPushAgreed(), request.getNightAgreed(), request.getMktAgreed());
     }
 
     /**

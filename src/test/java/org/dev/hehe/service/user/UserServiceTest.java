@@ -2,6 +2,7 @@ package org.dev.hehe.service.user;
 
 import org.dev.hehe.common.exception.CommonException;
 import org.dev.hehe.domain.user.User;
+import org.dev.hehe.dto.user.UserAgreementsRequest;
 import org.dev.hehe.dto.user.UserSummaryResponse;
 import org.dev.hehe.dto.user.UserWithdrawRequest;
 import org.dev.hehe.mapper.bookmark.BookmarkMapper;
@@ -226,6 +227,19 @@ class UserServiceTest {
         verify(userMapper, times(1)).deleteByUserId(1L);
     }
 
+    @Test
+    @DisplayName("알림 동의 변경 - 일부 필드만 전달해도 매퍼로 그대로 전달")
+    void updateAgreements_partial_success() {
+        // given
+        UserAgreementsRequest request = createAgreementsRequest(true, null, false);
+
+        // when
+        userService.updateAgreements(1L, request);
+
+        // then
+        verify(userMapper, times(1)).updateAgreements(1L, true, null, false);
+    }
+
     private User createUser(String status) {
         User user = new User();
         ReflectionTestUtils.setField(user, "userId", 1L);
@@ -237,6 +251,14 @@ class UserServiceTest {
         UserWithdrawRequest request = new UserWithdrawRequest();
         ReflectionTestUtils.setField(request, "provider", provider);
         ReflectionTestUtils.setField(request, "providerAccessToken", providerAccessToken);
+        return request;
+    }
+
+    private UserAgreementsRequest createAgreementsRequest(Boolean pushAgreed, Boolean nightAgreed, Boolean mktAgreed) {
+        UserAgreementsRequest request = new UserAgreementsRequest();
+        ReflectionTestUtils.setField(request, "pushAgreed", pushAgreed);
+        ReflectionTestUtils.setField(request, "nightAgreed", nightAgreed);
+        ReflectionTestUtils.setField(request, "mktAgreed", mktAgreed);
         return request;
     }
 }

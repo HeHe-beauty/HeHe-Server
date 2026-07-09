@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/hospitals/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/equipments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/articles/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/legal-documents/**").permitAll()
                         .requestMatchers("/api/v1/hearts/**").permitAll()
                         .requestMatchers("/api/v1/upload/**").permitAll() // TODO: 테스트 완료 후 인증 필요로 변경
                         // Swagger UI

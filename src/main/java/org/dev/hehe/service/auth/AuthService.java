@@ -35,17 +35,16 @@ public class AuthService {
     private final RedisTokenService redisTokenService;
 
     /**
-     * 소셜 로그인 / 자동 회원가입
+     * 소셜 로그인
      *
      * 1. provider access token으로 소셜 유저 정보 조회
      * 2. DB 조회 (provider + socialId)
-     *    - 기존 유저: 닉네임 최신화 후 로그인
-     *    - 신규 유저: INSERT 후 로그인
-     * 3. 앱 JWT 발급 및 Redis에 refresh token 저장
+     *    - 기존 유저: 닉네임 최신화 후 JWT 발급 (exists=true)
+     *    - 미가입 유저: INSERT 없이 exists=false만 반환 → FE가 회원가입 절차(동의 화면)로 유도
      *
      * @param provider    소셜 제공자 (kakao / naver)
      * @param accessToken FE로부터 받은 provider access token
-     * @return accessToken, refreshToken, 유저 정보
+     * @return exists=false(미가입) 또는 exists=true + accessToken/refreshToken/유저 정보
      * @throws CommonException AU004 (소셜 유저 정보 조회 실패)
      */
     public AuthLoginResponse login(String provider, String accessToken) {
@@ -55,37 +54,61 @@ public class AuthService {
 
         log.info("[Auth] 소셜 로그인 시도 - provider: {}, socialId: {}", providerUpper, userInfo.getSocialId());
 
-        // 2. DB 조회 → 신규이면 INSERT
+        // 2. DB 조회 — 없으면 회원가입 필요 응답
         Optional<User> existingUser = userMapper.findByProviderAndSocialId(providerUpper, userInfo.getSocialId());
-
-        Long userId;
-        String nickname = userInfo.getNickname();
-
-        if (existingUser.isPresent()) {
-            // 기존 유저: 닉네임 최신화
-            userId = existingUser.get().getUserId();
-            userMapper.updateNickname(userId, nickname);
-            log.info("[Auth] 로그인 성공 - userId: {}, provider: {}, nickname: {}", userId, providerUpper, nickname);
-        } else {
-            // 신규 유저: 회원가입
-            userId = generateUserId();
-            userMapper.insertUser(userId, userInfo.getSocialId(), providerUpper, nickname);
-            log.info("[Auth] 회원가입 완료 - userId: {}, provider: {}, socialId: {}, nickname: {}",
-                    userId, providerUpper, userInfo.getSocialId(), nickname);
+        if (existingUser.isEmpty()) {
+            log.info("[Auth] 미가입 유저 - provider: {}, socialId: {}", providerUpper, userInfo.getSocialId());
+            return AuthLoginResponse.notFound();
         }
 
-        // 3. 앱 JWT 발급
-        String appAccessToken = jwtProvider.generateAccessToken(userId);
-        String appRefreshToken = jwtProvider.generateRefreshToken(userId);
+        // 3. 기존 유저: 닉네임 최신화 후 로그인 처리
+        Long userId = existingUser.get().getUserId();
+        String nickname = userInfo.getNickname();
+        userMapper.updateNickname(userId, nickname);
+        log.info("[Auth] 로그인 성공 - userId: {}, provider: {}, nickname: {}", userId, providerUpper, nickname);
 
-        // 4. Redis에 refresh token 저장
-        redisTokenService.save(userId, appRefreshToken);
+        return issueTokens(userId, nickname);
+    }
 
-        return new AuthLoginResponse(
-                appAccessToken,
-                appRefreshToken,
-                new AuthLoginResponse.UserInfo(userId, nickname)
-        );
+    /**
+     * 회원가입
+     *
+     * 1. provider access token으로 소셜 유저 정보 재조회 (로그인 시도와 별개 호출)
+     * 2. 이미 가입된 유저면 idempotent하게 로그인 처리 (중복 INSERT 방지)
+     * 3. 신규면 동의값과 함께 INSERT 후 로그인 처리
+     *
+     * @param provider     소셜 제공자 (kakao / naver)
+     * @param accessToken  FE로부터 받은 provider access token
+     * @param pushAgreed   일반 푸시 동의
+     * @param nightAgreed  야간 푸시 동의
+     * @param mktAgreed    마케팅 수신 동의
+     * @param isOverAge    14세 이상 동의 (컨트롤러 단에서 @AssertTrue로 이미 검증됨)
+     * @param termsVersion 가입 시점 약관 버전
+     * @return accessToken, refreshToken, 유저 정보
+     * @throws CommonException AU004 (소셜 유저 정보 조회 실패)
+     */
+    public AuthLoginResponse signup(String provider, String accessToken,
+                                    boolean pushAgreed, boolean nightAgreed, boolean mktAgreed,
+                                    boolean isOverAge, String termsVersion) {
+        OAuthUserInfo userInfo = getOAuthUserInfo(provider, accessToken);
+        String providerUpper = provider.toUpperCase();
+        String nickname = userInfo.getNickname();
+
+        Optional<User> existingUser = userMapper.findByProviderAndSocialId(providerUpper, userInfo.getSocialId());
+        if (existingUser.isPresent()) {
+            // 이미 가입된 유저 — 중복 가입 요청을 에러 없이 로그인으로 처리 (idempotent)
+            Long userId = existingUser.get().getUserId();
+            log.info("[Auth] 이미 가입된 유저의 회원가입 재요청 - userId: {}, provider: {}", userId, providerUpper);
+            return issueTokens(userId, existingUser.get().getNickname());
+        }
+
+        Long userId = generateUserId();
+        userMapper.insertUser(userId, userInfo.getSocialId(), providerUpper, nickname,
+                pushAgreed, nightAgreed, mktAgreed, isOverAge, termsVersion);
+        log.info("[Auth] 회원가입 완료 - userId: {}, provider: {}, socialId: {}, nickname: {}",
+                userId, providerUpper, userInfo.getSocialId(), nickname);
+
+        return issueTokens(userId, nickname);
     }
 
     /**
@@ -146,5 +169,20 @@ public class AuthService {
      */
     private Long generateUserId() {
         return ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
+    }
+
+    /**
+     * 앱 JWT 발급 + Redis에 refresh token 저장 (로그인/회원가입 공통)
+     */
+    private AuthLoginResponse issueTokens(Long userId, String nickname) {
+        String appAccessToken = jwtProvider.generateAccessToken(userId);
+        String appRefreshToken = jwtProvider.generateRefreshToken(userId);
+        redisTokenService.save(userId, appRefreshToken);
+
+        return AuthLoginResponse.of(
+                appAccessToken,
+                appRefreshToken,
+                new AuthLoginResponse.UserInfo(userId, nickname)
+        );
     }
 }

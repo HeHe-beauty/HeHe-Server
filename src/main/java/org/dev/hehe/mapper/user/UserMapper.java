@@ -38,21 +38,35 @@ public interface UserMapper {
     Optional<User> findByUserId(@Param("userId") Long userId);
 
     /**
-     * 신규 유저 등록
+     * 신규 유저 등록 (회원가입 API 전용)
      * - user_id: 애플리케이션에서 생성한 비즈니스 ID
      * - status 기본값: ACTIVE
      *
-     * @param userId   비즈니스 유저 ID
-     * @param socialId 소셜 고유 ID
-     * @param provider 소셜 제공자 (KAKAO / NAVER)
-     * @param nickname 닉네임
+     * @param userId       비즈니스 유저 ID
+     * @param socialId     소셜 고유 ID
+     * @param provider     소셜 제공자 (KAKAO / NAVER)
+     * @param nickname     닉네임
+     * @param pushAgreed   일반 푸시 동의
+     * @param nightAgreed  야간 푸시 동의
+     * @param mktAgreed    마케팅 수신 동의
+     * @param isOverAge    14세 이상 동의 (가입 필수)
+     * @param termsVersion 가입 시점 약관 버전
      */
-    @Insert("INSERT INTO tb_user (user_id, social_id, provider, nickname, status) " +
-            "VALUES (#{userId}, #{socialId}, #{provider}, #{nickname}, 'ACTIVE')")
+    @Insert("""
+            INSERT INTO tb_user (user_id, social_id, provider, nickname, status,
+                                  push_agreed, night_agreed, mkt_agreed, is_over_age, terms_version)
+            VALUES (#{userId}, #{socialId}, #{provider}, #{nickname}, 'ACTIVE',
+                    #{pushAgreed}, #{nightAgreed}, #{mktAgreed}, #{isOverAge}, #{termsVersion})
+            """)
     void insertUser(@Param("userId") Long userId,
                     @Param("socialId") String socialId,
                     @Param("provider") String provider,
-                    @Param("nickname") String nickname);
+                    @Param("nickname") String nickname,
+                    @Param("pushAgreed") boolean pushAgreed,
+                    @Param("nightAgreed") boolean nightAgreed,
+                    @Param("mktAgreed") boolean mktAgreed,
+                    @Param("isOverAge") boolean isOverAge,
+                    @Param("termsVersion") String termsVersion);
 
     /**
      * 닉네임 업데이트 (로그인 시 최신 소셜 닉네임 반영)
@@ -62,6 +76,29 @@ public interface UserMapper {
      */
     @Update("UPDATE tb_user SET nickname = #{nickname} WHERE user_id = #{userId}")
     void updateNickname(@Param("userId") Long userId, @Param("nickname") String nickname);
+
+    /**
+     * 알림 동의 여부 부분 수정 (null인 필드는 기존값 유지)
+     *
+     * @param userId      비즈니스 유저 ID
+     * @param pushAgreed  일반 푸시 동의 (null이면 기존값 유지)
+     * @param nightAgreed 야간 푸시 동의 (null이면 기존값 유지)
+     * @param mktAgreed   마케팅 수신 동의 (null이면 기존값 유지)
+     */
+    @Update("<script>" +
+            "UPDATE tb_user " +
+            "<set>" +
+            "  <if test='pushAgreed != null'>push_agreed = #{pushAgreed},</if>" +
+            "  <if test='nightAgreed != null'>night_agreed = #{nightAgreed},</if>" +
+            "  <if test='mktAgreed != null'>mkt_agreed = #{mktAgreed},</if>" +
+            "  updated_at = NOW()" +
+            "</set>" +
+            " WHERE user_id = #{userId}" +
+            "</script>")
+    void updateAgreements(@Param("userId") Long userId,
+                          @Param("pushAgreed") Boolean pushAgreed,
+                          @Param("nightAgreed") Boolean nightAgreed,
+                          @Param("mktAgreed") Boolean mktAgreed);
 
     /**
      * 회원 탈퇴 처리 (소프트 삭제)

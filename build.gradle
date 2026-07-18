@@ -64,6 +64,10 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 
+    // 테스트 데이터가 Timestamp.valueOf() 등 JVM 기본 타임존에 의존하는 방식으로 생성되는 경우가 많아,
+    // CI(UTC 기본값)와 로컬(Asia/Seoul) 간 결과가 달라지는 것을 방지하기 위해 고정
+    systemProperty 'user.timezone', 'Asia/Seoul'
+
     testLogging {
         // 테스트 이벤트 출력 (통과 / 스킵 / 실패)
         events "passed", "skipped", "failed"

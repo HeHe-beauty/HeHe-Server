@@ -1,6 +1,6 @@
 # HEHE Backend
 
-_last update : 26.07.09_ (로그인/회원가입 API 분리, 알림 동의 변경 API 추가, 약관/정책 조회 API 추가)
+_last update : 26.07.21_ (마이페이지 요약에 이메일 필드 추가, 푸시 알림 브랜드명 [헤헤]→[히히] 변경)
 
 레이저 제모 병원 찾기 · 예약 앱 백엔드 서버
 
@@ -106,7 +106,7 @@ EC2 t3.micro (ap-northeast-2c)
 ### User
 | Method | Endpoint | 설명 |
 |---|---|---|
-| GET | `/api/v1/users/summary` | 마이페이지 요약 조회 (JWT 필요) |
+| GET | `/api/v1/users/summary` | 마이페이지 요약 조회 (이메일 포함, JWT 필요) |
 | DELETE | `/api/v1/users` | 회원 탈퇴 (소프트 삭제, JWT 필요) |
 | PATCH | `/api/v1/users/agreements` | 알림 동의 변경 (push/night/mkt, JWT 필요) |
 

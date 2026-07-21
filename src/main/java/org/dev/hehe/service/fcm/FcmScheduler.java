@@ -21,7 +21,7 @@ public class FcmScheduler {
     private final FcmMapper fcmMapper;
     private final FcmSendService fcmSendService;
 
-    private static final String PUSH_TITLE = "[헤헤] 예약 알림";
+    private static final String PUSH_TITLE = "[히히] 예약 알림";
 
     /** 알람 발송 유효 기간 (초) — 이 시간을 초과하면 발송 포기 후 완료 처리 */
     private static final long ALARM_EXPIRY_SECONDS = 30 * 60L;

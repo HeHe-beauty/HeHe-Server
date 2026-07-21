@@ -61,10 +61,10 @@ public class AuthService {
             return AuthLoginResponse.notFound();
         }
 
-        // 3. 기존 유저: 닉네임 최신화 후 로그인 처리
+        // 3. 기존 유저: 닉네임/이메일 최신화 후 로그인 처리
         Long userId = existingUser.get().getUserId();
         String nickname = userInfo.getNickname();
-        userMapper.updateNickname(userId, nickname);
+        userMapper.updateProfile(userId, nickname, userInfo.getEmail());
         log.info("[Auth] 로그인 성공 - userId: {}, provider: {}, nickname: {}", userId, providerUpper, nickname);
 
         return issueTokens(userId, nickname);
@@ -103,7 +103,7 @@ public class AuthService {
         }
 
         Long userId = generateUserId();
-        userMapper.insertUser(userId, userInfo.getSocialId(), providerUpper, nickname,
+        userMapper.insertUser(userId, userInfo.getSocialId(), providerUpper, nickname, userInfo.getEmail(),
                 pushAgreed, nightAgreed, mktAgreed, isOverAge, termsVersion);
         log.info("[Auth] 회원가입 완료 - userId: {}, provider: {}, socialId: {}, nickname: {}",
                 userId, providerUpper, userInfo.getSocialId(), nickname);

@@ -60,9 +60,14 @@ class AuthServiceTest {
     // ── 테스트용 OAuthUserInfo 구현 ─────────────────────────────────────────
 
     private OAuthUserInfo mockOAuthUserInfo(String provider, String socialId, String nickname) {
+        return mockOAuthUserInfo(provider, socialId, nickname, null);
+    }
+
+    private OAuthUserInfo mockOAuthUserInfo(String provider, String socialId, String nickname, String email) {
         return new OAuthUserInfo() {
             @Override public String getSocialId() { return socialId; }
             @Override public String getNickname() { return nickname; }
+            @Override public String getEmail() { return email; }
             @Override public String getProvider() { return provider; }
         };
     }
@@ -85,7 +90,7 @@ class AuthServiceTest {
         Long userId = 1000L;
         String nickname = "홍길동";
 
-        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname);
+        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname, "hong@example.com");
         User existingUser = mockUser(userId, nickname);
 
         given(kakaoOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
@@ -93,7 +98,7 @@ class AuthServiceTest {
                 .willReturn(Optional.of(existingUser));
         given(jwtProvider.generateAccessToken(userId)).willReturn("access_token");
         given(jwtProvider.generateRefreshToken(userId)).willReturn("refresh_token");
-        willDoNothing().given(userMapper).updateNickname(anyLong(), anyString());
+        willDoNothing().given(userMapper).updateProfile(anyLong(), anyString(), anyString());
         willDoNothing().given(redisTokenService).save(anyLong(), anyString());
 
         // when
@@ -106,8 +111,33 @@ class AuthServiceTest {
         assertThat(response.user().userId()).isEqualTo(userId);
         assertThat(response.user().nickname()).isEqualTo(nickname);
 
-        verify(userMapper).updateNickname(userId, nickname);
+        verify(userMapper).updateProfile(userId, nickname, "hong@example.com");
         verify(redisTokenService).save(userId, "refresh_token");
+    }
+
+    @Test
+    @DisplayName("이메일 제공 동의 없는 유저 로그인 - email null로 프로필 갱신")
+    void login_existingUser_noEmailConsent_updatesProfileWithNullEmail() {
+        // given
+        String provider = "kakao";
+        String providerToken = "kakao_token";
+        Long userId = 1000L;
+        String nickname = "홍길동";
+
+        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname, null);
+        User existingUser = mockUser(userId, nickname);
+
+        given(kakaoOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
+        given(userMapper.findByProviderAndSocialId("KAKAO", "kakao_social_1"))
+                .willReturn(Optional.of(existingUser));
+        given(jwtProvider.generateAccessToken(userId)).willReturn("access_token");
+        given(jwtProvider.generateRefreshToken(userId)).willReturn("refresh_token");
+
+        // when
+        authService.login(provider, providerToken);
+
+        // then
+        verify(userMapper).updateProfile(userId, nickname, null);
     }
 
     @Test
@@ -133,9 +163,9 @@ class AuthServiceTest {
         assertThat(response.refreshToken()).isNull();
         assertThat(response.user()).isNull();
 
-        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(),
+        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(), anyString(),
                 anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyString());
-        verify(userMapper, never()).updateNickname(anyLong(), anyString());
+        verify(userMapper, never()).updateProfile(anyLong(), anyString(), anyString());
         verify(jwtProvider, never()).generateAccessToken(anyLong());
         verify(redisTokenService, never()).save(anyLong(), anyString());
     }
@@ -159,7 +189,7 @@ class AuthServiceTest {
         String providerToken = "kakao_token";
         String nickname = "홍길동";
 
-        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname);
+        OAuthUserInfo userInfo = mockOAuthUserInfo(provider, "kakao_social_1", nickname, "hong@example.com");
 
         given(kakaoOAuthClient.getUserInfo(providerToken)).willReturn(userInfo);
         given(userMapper.findByProviderAndSocialId("KAKAO", "kakao_social_1"))
@@ -176,7 +206,7 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access_token");
         assertThat(response.user().nickname()).isEqualTo(nickname);
 
-        verify(userMapper).insertUser(anyLong(), eq("kakao_social_1"), eq("KAKAO"), eq(nickname),
+        verify(userMapper).insertUser(anyLong(), eq("kakao_social_1"), eq("KAKAO"), eq(nickname), eq("hong@example.com"),
                 eq(true), eq(false), eq(false), eq(true), eq("v1.0.0"));
         verify(redisTokenService).save(anyLong(), eq("refresh_token"));
     }
@@ -207,7 +237,7 @@ class AuthServiceTest {
         assertThat(response.exists()).isTrue();
         assertThat(response.user().userId()).isEqualTo(userId);
 
-        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(),
+        verify(userMapper, never()).insertUser(anyLong(), anyString(), anyString(), anyString(), anyString(),
                 anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyString());
         verify(redisTokenService).save(userId, "refresh_token");
     }

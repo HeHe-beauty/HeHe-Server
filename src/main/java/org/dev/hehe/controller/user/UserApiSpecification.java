@@ -25,7 +25,7 @@ public interface UserApiSpecification {
 
     @Operation(
             summary = "마이페이지 요약 조회",
-            description = "로그인한 유저의 찜 수, 문의 수, 예약 수를 반환합니다.",
+            description = "로그인한 유저의 이메일(소셜 제공 동의 없으면 null), 찜 수, 문의 수, 예약 수를 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses({
@@ -37,6 +37,7 @@ public interface UserApiSpecification {
                                     {
                                       "success": true,
                                       "data": {
+                                        "email": "user@example.com",
                                         "bookmarkCount": 5,
                                         "contactCount": 3,
                                         "scheduleCount": 2

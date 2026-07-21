@@ -20,7 +20,7 @@ public class FcmService {
     private final FcmMapper fcmMapper;
     private final FcmSendService fcmSendService;
 
-    private static final String TEST_TITLE = "[헤헤] 테스트 알림";
+    private static final String TEST_TITLE = "[히히] 테스트 알림";
     private static final String TEST_BODY = "FCM 푸시 알림이 정상적으로 작동하고 있어요.";
 
     /**

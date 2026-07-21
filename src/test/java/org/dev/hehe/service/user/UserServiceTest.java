@@ -72,9 +72,12 @@ class UserServiceTest {
     private UserService userService;
 
     @Test
-    @DisplayName("마이페이지 요약 조회 성공")
+    @DisplayName("마이페이지 요약 조회 성공 - 이메일 제공 동의한 유저")
     void getSummary_success() {
         // given
+        User user = createUser("ACTIVE");
+        ReflectionTestUtils.setField(user, "email", "hong@example.com");
+        given(userMapper.findByUserId(1L)).willReturn(Optional.of(user));
         given(bookmarkMapper.countBookmarks(1L)).willReturn(5);
         given(contactMapper.countContacts(1L)).willReturn(3);
         given(scheduleMapper.countUpcomingSchedules(eq(1L), anyLong())).willReturn(2);
@@ -83,15 +86,18 @@ class UserServiceTest {
         UserSummaryResponse result = userService.getSummary(1L);
 
         // then
+        assertThat(result.getEmail()).isEqualTo("hong@example.com");
         assertThat(result.getBookmarkCount()).isEqualTo(5);
         assertThat(result.getContactCount()).isEqualTo(3);
         assertThat(result.getScheduleCount()).isEqualTo(2);
     }
 
     @Test
-    @DisplayName("마이페이지 요약 조회 - 모든 항목 0건")
+    @DisplayName("마이페이지 요약 조회 - 모든 항목 0건, 이메일 미제공 시 null")
     void getSummary_allZero() {
         // given
+        User user = createUser("ACTIVE");
+        given(userMapper.findByUserId(1L)).willReturn(Optional.of(user));
         given(bookmarkMapper.countBookmarks(1L)).willReturn(0);
         given(contactMapper.countContacts(1L)).willReturn(0);
         given(scheduleMapper.countUpcomingSchedules(eq(1L), anyLong())).willReturn(0);
@@ -100,6 +106,7 @@ class UserServiceTest {
         UserSummaryResponse result = userService.getSummary(1L);
 
         // then
+        assertThat(result.getEmail()).isNull();
         assertThat(result.getBookmarkCount()).isZero();
         assertThat(result.getContactCount()).isZero();
         assertThat(result.getScheduleCount()).isZero();

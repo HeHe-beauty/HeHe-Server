@@ -71,7 +71,7 @@ class FcmSchedulerTest {
 
         verify(fcmSendService).sendMulticast(
                 eq(List.of("token1", "token2")),
-                eq("[헤헤] 예약 알림"),
+                eq("[히히] 예약 알림"),
                 contains("1시간")
         );
         verify(fcmMapper).markAlarmAsSent(1L);

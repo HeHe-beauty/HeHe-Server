@@ -49,10 +49,11 @@ public class KakaoOAuthClient {
 
             String socialId = String.valueOf(response.get("id"));
             String nickname = extractKakaoNickname(response);
+            String email = extractKakaoEmail(response);
 
             log.info("[Kakao OAuth] 유저 정보 조회 성공 - JOSH260416 - socialId: {}, nickname: {}", socialId, nickname);
 
-            return new KakaoUserInfo(socialId, nickname);
+            return new KakaoUserInfo(socialId, nickname, email);
 
         } catch (WebClientResponseException e) {
             log.warn("[Kakao OAuth] 유저 정보 조회 실패 - status: {}, body: {}",
@@ -115,15 +116,32 @@ public class KakaoOAuthClient {
         }
     }
 
+    /**
+     * 카카오 응답에서 이메일 추출
+     * 응답 구조: { kakao_account: { email: "..." } } — 이메일 제공 동의 없으면 필드 자체가 없음
+     */
+    private String extractKakaoEmail(Map<?, ?> response) {
+        try {
+            Map<?, ?> kakaoAccount = (Map<?, ?>) response.get("kakao_account");
+            return (String) kakaoAccount.get("email");
+        } catch (Exception e) {
+            log.debug("[Kakao OAuth] 이메일 없음 (제공 동의 없거나 미제공)");
+            return null;
+        }
+    }
+
     // ── Inner class ──────────────────────────────────────────────────────────
 
-    private record KakaoUserInfo(String socialId, String nickname) implements OAuthUserInfo {
+    private record KakaoUserInfo(String socialId, String nickname, String email) implements OAuthUserInfo {
 
         @Override
         public String getSocialId() { return socialId; }
 
         @Override
         public String getNickname() { return nickname; }
+
+        @Override
+        public String getEmail() { return email; }
 
         @Override
         public String getProvider() { return "kakao"; }

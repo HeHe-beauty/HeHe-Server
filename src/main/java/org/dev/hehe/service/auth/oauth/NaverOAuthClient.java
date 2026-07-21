@@ -55,6 +55,7 @@ public class NaverOAuthClient {
 
             Map<?, ?> userResponse = (Map<?, ?>) response.get("response");
             String socialId = (String) userResponse.get("id");
+            String email = (String) userResponse.get("email");
             String rawNickname = (String) userResponse.get("nickname");
             String rawName = (String) userResponse.get("name");
             // nickname → name → 기본값 순으로 적용
@@ -71,7 +72,7 @@ public class NaverOAuthClient {
 
             log.info("[Naver OAuth] 유저 정보 조회 성공 - JOSH260416 - socialId: {}, nickname: {}", socialId, nickname);
 
-            return new NaverUserInfo(socialId, nickname);
+            return new NaverUserInfo(socialId, nickname, email);
 
         } catch (WebClientResponseException e) {
             log.warn("[Naver OAuth] 유저 정보 조회 실패 - status: {}, body: {}",
@@ -116,13 +117,16 @@ public class NaverOAuthClient {
 
     // ── Inner class ──────────────────────────────────────────────────────────
 
-    private record NaverUserInfo(String socialId, String nickname) implements OAuthUserInfo {
+    private record NaverUserInfo(String socialId, String nickname, String email) implements OAuthUserInfo {
 
         @Override
         public String getSocialId() { return socialId; }
 
         @Override
         public String getNickname() { return nickname; }
+
+        @Override
+        public String getEmail() { return email; }
 
         @Override
         public String getProvider() { return "naver"; }

@@ -14,6 +14,9 @@ import lombok.Getter;
 @Schema(description = "마이페이지 요약 정보")
 public class UserSummaryResponse {
 
+    @Schema(description = "소셜 계정 이메일 (제공 동의 없거나 없으면 null)", example = "user@example.com", nullable = true)
+    private String email;
+
     @Schema(description = "찜한 병원 수", example = "5")
     private int bookmarkCount;
 

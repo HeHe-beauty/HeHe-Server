@@ -11,6 +11,9 @@ public interface OAuthUserInfo {
     /** 유저 닉네임 */
     String getNickname();
 
+    /** 소셜 계정 이메일 (제공 동의 없거나 미제공 시 null) */
+    String getEmail();
+
     /** 소셜 제공자 구분 (kakao / naver) */
     String getProvider();
 }

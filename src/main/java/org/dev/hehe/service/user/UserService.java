@@ -47,14 +47,15 @@ public class UserService {
     /**
      * 마이페이지 요약 정보 조회
      *
-     * <p>찜 수, 문의 수(삭제 제외), 예정 예약 수(현재 시각 이후)를 한 번에 반환한다.</p>
+     * <p>이메일(제공 동의 없으면 null), 찜 수, 문의 수(삭제 제외), 예정 예약 수(현재 시각 이후)를 한 번에 반환한다.</p>
      *
      * @param userId JWT에서 추출한 유저 ID
-     * @return 찜 수, 문의 수, 예정 예약 수
+     * @return 이메일, 찜 수, 문의 수, 예정 예약 수
      */
     public UserSummaryResponse getSummary(Long userId) {
         log.info("마이페이지 요약 조회 - userId={}", userId);
 
+        String email = userMapper.findByUserId(userId).map(User::getEmail).orElse(null);
         int bookmarkCount = bookmarkMapper.countBookmarks(userId);
         int contactCount = contactMapper.countContacts(userId);
         int scheduleCount = scheduleMapper.countUpcomingSchedules(userId, Instant.now().getEpochSecond());
@@ -63,6 +64,7 @@ public class UserService {
                 userId, bookmarkCount, contactCount, scheduleCount);
 
         return UserSummaryResponse.builder()
+                .email(email)
                 .bookmarkCount(bookmarkCount)
                 .contactCount(contactCount)
                 .scheduleCount(scheduleCount)

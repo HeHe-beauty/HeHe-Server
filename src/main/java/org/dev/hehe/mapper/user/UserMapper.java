@@ -46,6 +46,7 @@ public interface UserMapper {
      * @param socialId     소셜 고유 ID
      * @param provider     소셜 제공자 (KAKAO / NAVER)
      * @param nickname     닉네임
+     * @param email        소셜 계정 이메일 (제공 동의 없거나 미제공 시 null)
      * @param pushAgreed   일반 푸시 동의
      * @param nightAgreed  야간 푸시 동의
      * @param mktAgreed    마케팅 수신 동의
@@ -53,15 +54,16 @@ public interface UserMapper {
      * @param termsVersion 가입 시점 약관 버전
      */
     @Insert("""
-            INSERT INTO tb_user (user_id, social_id, provider, nickname, status,
+            INSERT INTO tb_user (user_id, social_id, provider, nickname, email, status,
                                   push_agreed, night_agreed, mkt_agreed, is_over_age, terms_version)
-            VALUES (#{userId}, #{socialId}, #{provider}, #{nickname}, 'ACTIVE',
+            VALUES (#{userId}, #{socialId}, #{provider}, #{nickname}, #{email}, 'ACTIVE',
                     #{pushAgreed}, #{nightAgreed}, #{mktAgreed}, #{isOverAge}, #{termsVersion})
             """)
     void insertUser(@Param("userId") Long userId,
                     @Param("socialId") String socialId,
                     @Param("provider") String provider,
                     @Param("nickname") String nickname,
+                    @Param("email") String email,
                     @Param("pushAgreed") boolean pushAgreed,
                     @Param("nightAgreed") boolean nightAgreed,
                     @Param("mktAgreed") boolean mktAgreed,
@@ -69,13 +71,14 @@ public interface UserMapper {
                     @Param("termsVersion") String termsVersion);
 
     /**
-     * 닉네임 업데이트 (로그인 시 최신 소셜 닉네임 반영)
+     * 닉네임/이메일 업데이트 (로그인 시 최신 소셜 정보 반영)
      *
      * @param userId   비즈니스 유저 ID
      * @param nickname 최신 닉네임
+     * @param email    최신 이메일 (제공 동의 없거나 미제공 시 null)
      */
-    @Update("UPDATE tb_user SET nickname = #{nickname} WHERE user_id = #{userId}")
-    void updateNickname(@Param("userId") Long userId, @Param("nickname") String nickname);
+    @Update("UPDATE tb_user SET nickname = #{nickname}, email = #{email} WHERE user_id = #{userId}")
+    void updateProfile(@Param("userId") Long userId, @Param("nickname") String nickname, @Param("email") String email);
 
     /**
      * 알림 동의 여부 부분 수정 (null인 필드는 기존값 유지)

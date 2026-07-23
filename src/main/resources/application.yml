@@ -13,6 +13,11 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  servlet:
+    multipart:
+      # UploadController의 자체 5MB 검증과 동일하게 맞춤 (기본값 1MB라 그보다 큰 파일이 여기서 먼저 막혔음)
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 mybatis:
   type-aliases-package: org.dev.hehe

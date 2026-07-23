@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -56,6 +57,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
                 .body(ApiResult.fail(ErrorCode.INVALID_INPUT, e.getParameterName() + " 파라미터가 필요합니다."));
+    }
+
+    /**
+     * 업로드 파일이 서버에 설정된 최대 크기를 초과한 경우 처리
+     * (application.yml의 spring.servlet.multipart.max-file-size 초과 시 발생)
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResult<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        log.warn("업로드 파일 크기 초과 - {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT.getStatus())
+                .body(ApiResult.fail(ErrorCode.INVALID_INPUT, "파일 크기가 허용된 최대 용량을 초과했습니다."));
     }
 
     /**

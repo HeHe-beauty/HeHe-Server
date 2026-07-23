@@ -22,7 +22,7 @@ jobs:
       - name: Run tests
         run: |
           chmod +x gradlew
-          ./gradlew test --tests "org.dev.hehe.service.*" --tests "org.dev.hehe.controller.*"
+          ./gradlew test --tests "org.dev.hehe.service.*" --tests "org.dev.hehe.controller.*" --tests "org.dev.hehe.common.*"
 
   deploy:
     needs: test

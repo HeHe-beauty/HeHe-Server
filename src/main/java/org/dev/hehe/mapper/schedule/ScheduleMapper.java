@@ -139,6 +139,28 @@ public interface ScheduleMapper {
                         @Param("visitTime") Long visitTime);
 
     /**
+     * 방문 시각 변경 시 연관 알림의 alarm_time 재계산 (alarm_type별 오프셋 재적용)
+     *
+     * <p>is_sent 도 false 로 초기화하여 변경된 시각 기준으로 재발송되도록 한다.</p>
+     *
+     * @param scheduleId 대상 일정 ID
+     * @param visitTime  변경된 방문 예정 시각 (Unix timestamp)
+     */
+    @Update("""
+            UPDATE tb_schedule_alarm
+            SET alarm_time = CASE alarm_type
+                    WHEN '1H' THEN #{visitTime} - 3600
+                    WHEN '1D' THEN #{visitTime} - 86400
+                    WHEN '3D' THEN #{visitTime} - 259200
+                    ELSE alarm_time
+                END,
+                is_sent = false,
+                updated_at = NOW()
+            WHERE schedule_id = #{scheduleId}
+            """)
+    void recalculateAlarmTimes(@Param("scheduleId") long scheduleId, @Param("visitTime") long visitTime);
+
+    /**
      * 알림 다건 일괄 INSERT (알림 등록 API에서 호출 예정)
      *
      * @param alarms 삽입할 알림 목록

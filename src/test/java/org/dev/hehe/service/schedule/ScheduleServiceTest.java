@@ -296,6 +296,7 @@ class ScheduleServiceTest {
         // then
         assertThat(result.getHospitalName()).isEqualTo("신 클리닉");
         verify(scheduleMapper).updateSchedule(eq(scheduleId), eq("신 클리닉"), isNull(), isNull());
+        verify(scheduleMapper, never()).recalculateAlarmTimes(anyLong(), anyLong());
     }
 
     @Test
@@ -320,6 +321,7 @@ class ScheduleServiceTest {
         assertThat(result.getProcedureName()).isEqualTo("신 시술");
         assertThat(result.getVisitTime()).isEqualTo(1741766400L);
         verify(scheduleMapper).updateSchedule(eq(scheduleId), eq("신 클리닉"), eq("신 시술"), eq(1741766400L));
+        verify(scheduleMapper).recalculateAlarmTimes(scheduleId, 1741766400L);
     }
 
     @Test

@@ -260,6 +260,11 @@ public class ScheduleService {
                 request.getVisitTime()
         );
 
+        if (request.getVisitTime() != null) {
+            scheduleMapper.recalculateAlarmTimes(scheduleId, request.getVisitTime());
+            log.debug("방문 시각 변경으로 알림 재계산 완료 - scheduleId={}, visitTime={}", scheduleId, request.getVisitTime());
+        }
+
         log.info("일정 수정 완료 - scheduleId={}", scheduleId);
         return getScheduleById(scheduleId);
     }

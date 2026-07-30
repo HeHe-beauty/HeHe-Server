@@ -77,14 +77,16 @@ public class ContactService {
     }
 
     /**
-     * 문의 내역 저장
+     * 문의 내역 저장 (upsert)
+     *
+     * <p>동일 병원에 대한 기존 문의 내역이 있으면 새로 쌓지 않고 contact_type·시각만 최신화한다.</p>
      *
      * @param userId  JWT에서 추출한 유저 ID
      * @param request 병원 ID, 문의 유형(CALL/CHAT/VISIT)
      */
     public void saveContact(Long userId, ContactSaveRequest request) {
         log.info("문의 저장 - userId={}, hospitalId={}, contactType={}", userId, request.getHospitalId(), request.getContactType());
-        contactMapper.insertContact(userId, request.getHospitalId(), request.getContactType());
+        contactMapper.upsertContact(userId, request.getHospitalId(), request.getContactType());
         log.info("문의 저장 완료 - userId={}, hospitalId={}", userId, request.getHospitalId());
     }
 

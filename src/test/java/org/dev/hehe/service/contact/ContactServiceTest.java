@@ -103,7 +103,7 @@ class ContactServiceTest {
         contactService.saveContact(1L, request);
 
         // then
-        verify(contactMapper, times(1)).insertContact(1L, 101L, "CALL");
+        verify(contactMapper, times(1)).upsertContact(1L, 101L, "CALL");
     }
 
     @Test

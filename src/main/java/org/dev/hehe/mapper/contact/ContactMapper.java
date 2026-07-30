@@ -41,14 +41,21 @@ public interface ContactMapper {
     List<ContactHistory> findContactHistories(@Param("userId") Long userId);
 
     /**
-     * 문의 내역 저장
+     * 문의 내역 저장 (upsert)
+     *
+     * <p>동일한 (user_id, hospital_id) 조합이 이미 존재하면 새 레코드를 만들지 않고
+     * contact_type·created_at을 최신 값으로 갱신한다. 소프트 삭제된 상태였다면 is_deleted도 0으로 복원한다.</p>
      *
      * @param userId      유저 ID
      * @param hospitalId  병원 ID
      * @param contactType 문의 유형 (CALL/CHAT/VISIT)
      */
-    @Insert("INSERT INTO tb_contact_history (user_id, hospital_id, contact_type) VALUES (#{userId}, #{hospitalId}, #{contactType})")
-    void insertContact(@Param("userId") Long userId,
+    @Insert("""
+            INSERT INTO tb_contact_history (user_id, hospital_id, contact_type)
+            VALUES (#{userId}, #{hospitalId}, #{contactType})
+            ON DUPLICATE KEY UPDATE contact_type = VALUES(contact_type), is_deleted = 0, created_at = NOW()
+            """)
+    void upsertContact(@Param("userId") Long userId,
                        @Param("hospitalId") Long hospitalId,
                        @Param("contactType") String contactType);
 

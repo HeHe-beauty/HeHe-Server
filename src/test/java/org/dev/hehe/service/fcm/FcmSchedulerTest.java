@@ -10,6 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -146,22 +149,111 @@ class FcmSchedulerTest {
         verify(fcmMapper).markAlarmAsSent(1L);
     }
 
+    // ---- 야간(22시~08시 KST) + night_agreed 필터링 테스트 ----
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    @Test
+    @DisplayName("야간(23시) + night_agreed=false면 발송 없이 완료 처리한다")
+    void sendScheduledAlarms_nightHours_nightNotAgreed_skipsSending() {
+        setClock("2026-08-02T23:00:00");
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", false);
+        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
+
+        fcmScheduler.sendScheduledAlarms();
+
+        verify(fcmMapper).markAlarmAsSent(1L);
+        verify(fcmMapper, never()).findActiveTokensByUserId(any());
+        verifyNoInteractions(fcmSendService);
+    }
+
+    @Test
+    @DisplayName("야간(23시)이어도 night_agreed=true면 정상 발송한다")
+    void sendScheduledAlarms_nightHours_nightAgreed_sends() {
+        setClock("2026-08-02T23:00:00");
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", true);
+        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
+        given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
+        given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
+
+        fcmScheduler.sendScheduledAlarms();
+
+        verify(fcmSendService).sendMulticast(any(), anyString(), anyString());
+        verify(fcmMapper).markAlarmAsSent(1L);
+    }
+
+    @Test
+    @DisplayName("주간(14시)이면 night_agreed=false여도 정상 발송한다")
+    void sendScheduledAlarms_dayHours_nightNotAgreed_sends() {
+        setClock("2026-08-02T14:00:00");
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", false);
+        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
+        given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
+        given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
+
+        fcmScheduler.sendScheduledAlarms();
+
+        verify(fcmSendService).sendMulticast(any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("경계값 - 08시 정각은 야간이 아니므로 night_agreed=false여도 정상 발송한다")
+    void sendScheduledAlarms_boundary_8am_isDayHours_sends() {
+        setClock("2026-08-02T08:00:00");
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", false);
+        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
+        given(fcmMapper.findActiveTokensByUserId(10L)).willReturn(List.of("token1"));
+        given(fcmSendService.sendMulticast(any(), anyString(), anyString())).willReturn(1);
+
+        fcmScheduler.sendScheduledAlarms();
+
+        verify(fcmSendService).sendMulticast(any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("경계값 - 22시 정각은 야간이므로 night_agreed=false면 발송을 스킵한다")
+    void sendScheduledAlarms_boundary_10pm_isNightHours_skips() {
+        setClock("2026-08-02T22:00:00");
+        PendingAlarmDto alarm = createAlarm(1L, "1H", 10L, "헤헤병원", false);
+        given(fcmMapper.findPendingAlarms()).willReturn(List.of(alarm));
+
+        fcmScheduler.sendScheduledAlarms();
+
+        verify(fcmMapper).markAlarmAsSent(1L);
+        verifyNoInteractions(fcmSendService);
+    }
+
+    private void setClock(String isoLocalDateTime) {
+        Clock fixedClock = Clock.fixed(LocalDateTime.parse(isoLocalDateTime).atZone(KST).toInstant(), KST);
+        ReflectionTestUtils.setField(fcmScheduler, "clock", fixedClock);
+    }
+
     // ---- helper ----
 
     private PendingAlarmDto createAlarm(Long alarmId, String alarmType, Long userId, String hospitalName) {
-        // 기본 alarmTime: 5분 전 (만료되지 않은 정상 케이스)
+        // 기본 alarmTime: 5분 전 (만료되지 않은 정상 케이스), night_agreed 기본값 true(주/야간 무관 발송)
+        return createAlarm(alarmId, alarmType, userId, hospitalName, true);
+    }
+
+    private PendingAlarmDto createAlarm(Long alarmId, String alarmType, Long userId, String hospitalName, boolean nightAgreed) {
         return createAlarmWithTime(alarmId, alarmType, userId, hospitalName,
-                System.currentTimeMillis() / 1000 - 300);
+                System.currentTimeMillis() / 1000 - 300, nightAgreed);
     }
 
     private PendingAlarmDto createAlarmWithTime(Long alarmId, String alarmType, Long userId,
                                                 String hospitalName, long alarmTime) {
+        return createAlarmWithTime(alarmId, alarmType, userId, hospitalName, alarmTime, true);
+    }
+
+    private PendingAlarmDto createAlarmWithTime(Long alarmId, String alarmType, Long userId,
+                                                String hospitalName, long alarmTime, boolean nightAgreed) {
         PendingAlarmDto alarm = new PendingAlarmDto();
         ReflectionTestUtils.setField(alarm, "alarmId", alarmId);
         ReflectionTestUtils.setField(alarm, "alarmType", alarmType);
         ReflectionTestUtils.setField(alarm, "alarmTime", alarmTime);
         ReflectionTestUtils.setField(alarm, "userId", userId);
         ReflectionTestUtils.setField(alarm, "hospitalName", hospitalName);
+        ReflectionTestUtils.setField(alarm, "nightAgreed", nightAgreed);
         return alarm;
     }
 }

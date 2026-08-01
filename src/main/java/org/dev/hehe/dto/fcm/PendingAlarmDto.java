@@ -26,4 +26,7 @@ public class PendingAlarmDto {
 
     /** 알림 발송 예정 시각 (Unix timestamp) — 만료 여부 판단에 사용 */
     private Long alarmTime;
+
+    /** 야간 푸시 동의 여부 — false면 22시~08시(KST) 발송 스킵 */
+    private boolean nightAgreed;
 }

@@ -7,6 +7,9 @@ import org.dev.hehe.mapper.fcm.FcmMapper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -22,15 +25,20 @@ public class FcmScheduler {
     private final FcmSendService fcmSendService;
 
     private static final String PUSH_TITLE = "[히히] 예약 알림";
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     /** 알람 발송 유효 기간 (초) — 이 시간을 초과하면 발송 포기 후 완료 처리 */
     private static final long ALARM_EXPIRY_SECONDS = 30 * 60L;
+
+    /** 야간 시간대 판단 기준 시각 — 테스트에서 ReflectionTestUtils로 고정 시각 주입 가능 */
+    private Clock clock = Clock.system(KST);
 
     /**
      * 미발송 스케줄 알람 조회 후 FCM 푸시 발송
      *
      * <p>fixedDelay: 이전 실행 종료 후 1분 뒤 재실행 (중복 실행 방지)</p>
-     * <p>알림 동의 여부는 FE에서 관리하므로 서버 필터링 없이 전체 발송한다.</p>
+     * <p>push_agreed/mkt_agreed는 FE에서 관리하므로 서버 필터링 없이 발송하지만,
+     * night_agreed=false인 유저는 22시~08시(KST) 사이 알람을 스킵한다(재발송 없음).</p>
      */
     @Scheduled(fixedDelay = 60_000)
     public void sendScheduledAlarms() {
@@ -45,6 +53,13 @@ public class FcmScheduler {
             // 만료된 알람은 발송 포기 후 완료 처리
             if (isExpired(alarm.getAlarmTime())) {
                 log.warn("만료된 알람 완료 처리: alarmId={}, alarmTime={}", alarm.getAlarmId(), alarm.getAlarmTime());
+                fcmMapper.markAlarmAsSent(alarm.getAlarmId());
+                continue;
+            }
+
+            // 야간(22시~08시 KST) + 야간 알림 미동의 유저는 발송 스킵 후 완료 처리
+            if (isNightHours() && !alarm.isNightAgreed()) {
+                log.debug("야간 알림 미동의 - 발송 스킵: alarmId={}, userId={}", alarm.getAlarmId(), alarm.getUserId());
                 fcmMapper.markAlarmAsSent(alarm.getAlarmId());
                 continue;
             }
@@ -80,6 +95,16 @@ public class FcmScheduler {
     private boolean isExpired(Long alarmTime) {
         long now = System.currentTimeMillis() / 1000;
         return now - alarmTime > ALARM_EXPIRY_SECONDS;
+    }
+
+    /**
+     * 현재 시각(KST) 기준 야간(22시~08시) 여부
+     *
+     * @return 22:00 ~ 익일 08:00 사이면 true
+     */
+    private boolean isNightHours() {
+        int hour = LocalTime.now(clock).getHour();
+        return hour >= 22 || hour < 8;
     }
 
     /**

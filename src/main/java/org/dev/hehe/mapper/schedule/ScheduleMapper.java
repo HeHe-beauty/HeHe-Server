@@ -21,18 +21,23 @@ import java.util.Optional;
 public interface ScheduleMapper {
 
     /**
-     * schedule_id로 일정 단건 조회
+     * schedule_id로 일정 단건 조회 (소유자 검증 포함)
+     *
+     * <p>userId가 일치하지 않으면 다른 유저 소유 일정이라도 존재 여부와 무관하게 빈 결과를 반환한다.
+     * "없음"과 "있는데 내 것 아님"을 구분하지 않아 SCHEDULE_NOT_FOUND로 동일하게 처리된다.</p>
      *
      * @param scheduleId 조회할 일정 ID
-     * @return 일정 도메인 객체 (없으면 Optional.empty())
+     * @param userId     소유자 검증용 유저 ID
+     * @return 일정 도메인 객체 (없거나 소유자가 다르면 Optional.empty())
      */
     @Select("""
             SELECT schedule_id, user_id, hospital_name, procedure_name,
                    visit_time, alarm_enabled, created_at, updated_at
             FROM tb_schedule
             WHERE schedule_id = #{scheduleId}
+              AND user_id = #{userId}
             """)
-    Optional<Schedule> findScheduleById(@Param("scheduleId") Long scheduleId);
+    Optional<Schedule> findScheduleById(@Param("scheduleId") Long scheduleId, @Param("userId") Long userId);
 
     /**
      * 특정 유저의 지정 기간 내 일정 목록 조회 (visit_time ASC)

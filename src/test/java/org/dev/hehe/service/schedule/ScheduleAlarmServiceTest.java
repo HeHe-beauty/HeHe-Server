@@ -59,11 +59,11 @@ class ScheduleAlarmServiceTest {
         long visitTime = 1741680000L;
         Schedule schedule = createSchedule(scheduleId, visitTime);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.insertScheduleAlarmIfNotExists(eq(scheduleId), eq("1H"), anyLong())).willReturn(1);
 
         // when
-        ScheduleAlarmResponse result = scheduleAlarmService.addAlarm(scheduleId, "1H");
+        ScheduleAlarmResponse result = scheduleAlarmService.addAlarm(1L, scheduleId, "1H");
 
         // then
         assertThat(result.getAlarmType()).isEqualTo("1H");
@@ -79,11 +79,11 @@ class ScheduleAlarmServiceTest {
         long visitTime = 1741680000L;
         Schedule schedule = createSchedule(scheduleId, visitTime);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.insertScheduleAlarmIfNotExists(eq(scheduleId), eq("3D"), anyLong())).willReturn(1);
 
         // when
-        ScheduleAlarmResponse result = scheduleAlarmService.addAlarm(scheduleId, "3D");
+        ScheduleAlarmResponse result = scheduleAlarmService.addAlarm(1L, scheduleId, "3D");
 
         // then
         assertThat(result.getAlarmTime()).isEqualTo(visitTime - 259_200);
@@ -96,11 +96,11 @@ class ScheduleAlarmServiceTest {
         long scheduleId = 1001L;
         Schedule schedule = createSchedule(scheduleId, 1741680000L);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.insertScheduleAlarmIfNotExists(anyLong(), anyString(), anyLong())).willReturn(0);
 
         // when & then
-        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(scheduleId, "1H"))
+        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(1L, scheduleId, "1H"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ALARM_ALREADY_EXISTS));
@@ -110,10 +110,10 @@ class ScheduleAlarmServiceTest {
     @DisplayName("알림 등록 실패 - 존재하지 않는 scheduleId → SCHEDULE_NOT_FOUND(S001)")
     void addAlarm_fail_scheduleNotFound() {
         // given
-        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+        given(scheduleMapper.findScheduleById(999L, 1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(999L, "1H"))
+        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(1L, 999L, "1H"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
@@ -126,12 +126,12 @@ class ScheduleAlarmServiceTest {
     @DisplayName("알림 등록 실패 - 지원하지 않는 alarmType → INVALID_INPUT(C002)")
     void addAlarm_fail_invalidAlarmType() {
         // when & then: validateAlarmType에서 즉시 예외, DB 조회 없음
-        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(1001L, "2H"))
+        assertThatThrownBy(() -> scheduleAlarmService.addAlarm(1L, 1001L, "2H"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
 
-        verify(scheduleMapper, never()).findScheduleById(anyLong());
+        verify(scheduleMapper, never()).findScheduleById(anyLong(), anyLong());
     }
 
     // =============================================
@@ -145,11 +145,11 @@ class ScheduleAlarmServiceTest {
         long scheduleId = 1001L;
         Schedule schedule = createSchedule(scheduleId, 1741680000L);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.deleteScheduleAlarm(scheduleId, "1D")).willReturn(1);
 
         // when & then: 예외 없이 정상 완료
-        scheduleAlarmService.removeAlarm(scheduleId, "1D");
+        scheduleAlarmService.removeAlarm(1L, scheduleId, "1D");
 
         verify(scheduleMapper).deleteScheduleAlarm(scheduleId, "1D");
     }
@@ -161,11 +161,11 @@ class ScheduleAlarmServiceTest {
         long scheduleId = 1001L;
         Schedule schedule = createSchedule(scheduleId, 1741680000L);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.deleteScheduleAlarm(scheduleId, "3D")).willReturn(0);
 
         // when & then
-        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(scheduleId, "3D"))
+        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(1L, scheduleId, "3D"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.ALARM_NOT_FOUND));
@@ -175,10 +175,10 @@ class ScheduleAlarmServiceTest {
     @DisplayName("알림 삭제 실패 - 존재하지 않는 scheduleId → SCHEDULE_NOT_FOUND(S001)")
     void removeAlarm_fail_scheduleNotFound() {
         // given
-        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+        given(scheduleMapper.findScheduleById(999L, 1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(999L, "1H"))
+        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(1L, 999L, "1H"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
@@ -189,12 +189,12 @@ class ScheduleAlarmServiceTest {
     @Test
     @DisplayName("알림 삭제 실패 - 지원하지 않는 alarmType → INVALID_INPUT(C002)")
     void removeAlarm_fail_invalidAlarmType() {
-        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(1001L, "INVALID"))
+        assertThatThrownBy(() -> scheduleAlarmService.removeAlarm(1L, 1001L, "INVALID"))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode())
                         .isEqualTo(ErrorCode.INVALID_INPUT));
 
-        verify(scheduleMapper, never()).findScheduleById(anyLong());
+        verify(scheduleMapper, never()).findScheduleById(anyLong(), anyLong());
     }
 
     // =============================================

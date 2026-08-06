@@ -54,7 +54,7 @@ public class ScheduleController implements ScheduleApiSpecification {
     public ApiResult<ScheduleResponse> getSchedule(@LoginUser Long userId,
                                                       @PathVariable Long scheduleId) {
         log.info("[GET] /api/v1/schedules/{} - 일정 단건 조회 요청 - userId={}", scheduleId, userId);
-        ScheduleResponse response = scheduleService.getScheduleById(scheduleId);
+        ScheduleResponse response = scheduleService.getScheduleById(userId, scheduleId);
         log.info("일정 단건 조회 완료 - scheduleId={}", scheduleId);
         return ApiResult.ok(response);
     }
@@ -99,7 +99,7 @@ public class ScheduleController implements ScheduleApiSpecification {
     public ApiResult<Void> deleteSchedule(@LoginUser Long userId,
                                              @PathVariable Long scheduleId) {
         log.info("[DELETE] /api/v1/schedules/{} - 일정 삭제 요청 - userId={}", scheduleId, userId);
-        scheduleService.deleteSchedule(scheduleId);
+        scheduleService.deleteSchedule(userId, scheduleId);
         log.info("일정 삭제 완료 - scheduleId={}", scheduleId);
         return ApiResult.ok(null);
     }
@@ -112,7 +112,7 @@ public class ScheduleController implements ScheduleApiSpecification {
                                                          @RequestBody ScheduleUpdateRequest request) {
         log.info("[PATCH] /api/v1/schedules/{} - userId={}, hospitalName={}, visitTime={}",
                 scheduleId, userId, request.getHospitalName(), request.getVisitTime());
-        ScheduleResponse response = scheduleService.updateSchedule(scheduleId, request);
+        ScheduleResponse response = scheduleService.updateSchedule(userId, scheduleId, request);
         log.info("일정 수정 완료 - scheduleId={}", scheduleId);
         return ApiResult.ok(response);
     }

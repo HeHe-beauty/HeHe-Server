@@ -72,7 +72,7 @@ class ScheduleAlarmControllerTest {
                 .isSent(false)
                 .build();
 
-        given(scheduleAlarmService.addAlarm(scheduleId, "1H")).willReturn(mockResponse);
+        given(scheduleAlarmService.addAlarm(1L, scheduleId, "1H")).willReturn(mockResponse);
 
         // when & then
         mockMvc.perform(post("/api/v1/schedules/{scheduleId}/alarms", scheduleId)
@@ -92,7 +92,7 @@ class ScheduleAlarmControllerTest {
     void addAlarm_fail_alreadyExists() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.ALARM_ALREADY_EXISTS))
-                .given(scheduleAlarmService).addAlarm(1001L, "1H");
+                .given(scheduleAlarmService).addAlarm(1L, 1001L, "1H");
 
         // when & then
         mockMvc.perform(post("/api/v1/schedules/1001/alarms")
@@ -111,7 +111,7 @@ class ScheduleAlarmControllerTest {
     void addAlarm_fail_scheduleNotFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.SCHEDULE_NOT_FOUND))
-                .given(scheduleAlarmService).addAlarm(999L, "1D");
+                .given(scheduleAlarmService).addAlarm(1L, 999L, "1D");
 
         // when & then
         mockMvc.perform(post("/api/v1/schedules/999/alarms")
@@ -129,7 +129,7 @@ class ScheduleAlarmControllerTest {
     void addAlarm_fail_invalidAlarmType() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.INVALID_INPUT))
-                .given(scheduleAlarmService).addAlarm(1001L, "2H");
+                .given(scheduleAlarmService).addAlarm(1L, 1001L, "2H");
 
         // when & then
         mockMvc.perform(post("/api/v1/schedules/1001/alarms")
@@ -150,7 +150,7 @@ class ScheduleAlarmControllerTest {
     @DisplayName("DELETE /api/v1/schedules/{scheduleId}/alarms/{alarmType} - 알림 삭제 성공 (200)")
     void removeAlarm_success() throws Exception {
         // given
-        willDoNothing().given(scheduleAlarmService).removeAlarm(1001L, "1D");
+        willDoNothing().given(scheduleAlarmService).removeAlarm(1L, 1001L, "1D");
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/1001/alarms/1D")
@@ -166,7 +166,7 @@ class ScheduleAlarmControllerTest {
     void removeAlarm_fail_alarmNotFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.ALARM_NOT_FOUND))
-                .given(scheduleAlarmService).removeAlarm(1001L, "3D");
+                .given(scheduleAlarmService).removeAlarm(1L, 1001L, "3D");
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/1001/alarms/3D")
@@ -183,7 +183,7 @@ class ScheduleAlarmControllerTest {
     void removeAlarm_fail_scheduleNotFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.SCHEDULE_NOT_FOUND))
-                .given(scheduleAlarmService).removeAlarm(999L, "1H");
+                .given(scheduleAlarmService).removeAlarm(1L, 999L, "1H");
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/999/alarms/1H")
@@ -199,7 +199,7 @@ class ScheduleAlarmControllerTest {
     void removeAlarm_fail_invalidAlarmType() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.INVALID_INPUT))
-                .given(scheduleAlarmService).removeAlarm(1001L, "INVALID");
+                .given(scheduleAlarmService).removeAlarm(1L, 1001L, "INVALID");
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/1001/alarms/INVALID")

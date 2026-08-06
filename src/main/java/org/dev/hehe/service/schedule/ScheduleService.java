@@ -38,16 +38,19 @@ public class ScheduleService {
     /**
      * scheduleId로 일정 단건 조회 (알림 목록 포함)
      *
+     * <p>본인 소유 일정이 아니면 존재 여부와 무관하게 SCHEDULE_NOT_FOUND로 처리한다.</p>
+     *
+     * @param userId     요청 유저 ID (JWT에서 추출, 소유자 검증용)
      * @param scheduleId 조회할 일정 ID
      * @return 일정 상세 응답 DTO (알림 목록 포함)
-     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않는 scheduleId
+     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않거나 본인 소유가 아닌 scheduleId
      */
-    public ScheduleResponse getScheduleById(Long scheduleId) {
-        log.debug("일정 단건 조회 - scheduleId={}", scheduleId);
+    public ScheduleResponse getScheduleById(Long userId, Long scheduleId) {
+        log.debug("일정 단건 조회 - userId={}, scheduleId={}", userId, scheduleId);
 
-        Schedule schedule = scheduleMapper.findScheduleById(scheduleId)
+        Schedule schedule = scheduleMapper.findScheduleById(scheduleId, userId)
                 .orElseThrow(() -> {
-                    log.warn("일정을 찾을 수 없음 - scheduleId={}", scheduleId);
+                    log.warn("일정을 찾을 수 없음 - userId={}, scheduleId={}", userId, scheduleId);
                     return new CommonException(ErrorCode.SCHEDULE_NOT_FOUND);
                 });
 
@@ -67,8 +70,6 @@ public class ScheduleService {
      * <p>visit_time >= 현재 시각인 일정을 visit_time ASC로 정렬하여 limit 개 반환.</p>
      * <p>visit_time은 Unix timestamp(seconds) 그대로 반환. 시간대 전환은 FE에서 처리.</p>
      * <p>알림은 schedule_id IN (...) 단일 쿼리로 일괄 조회하여 N+1 방지.</p>
-     *
-     * <p>TODO: Auth 구현 후 userId를 JWT SecurityContext에서 추출하도록 변경</p>
      *
      * @param userId 조회할 유저 ID
      * @param limit  조회할 최대 건수 (1 이상)
@@ -116,8 +117,6 @@ public class ScheduleService {
      * <p>조회 범위: 입력 날짜 00:00:00 (포함) ~ 다음 날 00:00:00 (미포함)</p>
      * <p>visit_time은 Unix timestamp(seconds) 그대로 반환. 시간대 전환은 FE에서 처리.</p>
      * <p>알림은 schedule_id IN (...) 단일 쿼리로 일괄 조회하여 N+1 방지.</p>
-     *
-     * <p>TODO: Auth 구현 후 userId를 JWT SecurityContext에서 추출하도록 변경</p>
      *
      * @param userId 조회할 유저 ID
      * @param date   조회할 날짜 문자열 (yyyy-MM-dd)
@@ -234,19 +233,20 @@ public class ScheduleService {
      * <p>hospitalName, procedureName, visitTime 중 최소 하나 이상 전달해야 한다.</p>
      * <p>null 인 필드는 기존값을 유지한다.</p>
      *
+     * @param userId     요청 유저 ID (JWT에서 추출, 소유자 검증용)
      * @param scheduleId 수정할 일정 ID
      * @param request    수정 요청 DTO
      * @return 수정 완료된 일정 상세 응답 (알림 목록 포함)
-     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않는 scheduleId
+     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않거나 본인 소유가 아닌 scheduleId
      * @throws CommonException INVALID_INPUT — 수정 필드가 하나도 없거나 hospitalName 이 공백
      */
     @Transactional
-    public ScheduleResponse updateSchedule(Long scheduleId, ScheduleUpdateRequest request) {
+    public ScheduleResponse updateSchedule(Long userId, Long scheduleId, ScheduleUpdateRequest request) {
         validateUpdateRequest(request);
 
-        scheduleMapper.findScheduleById(scheduleId)
+        scheduleMapper.findScheduleById(scheduleId, userId)
                 .orElseThrow(() -> {
-                    log.warn("수정 대상 일정 없음 - scheduleId={}", scheduleId);
+                    log.warn("수정 대상 일정 없음 - userId={}, scheduleId={}", userId, scheduleId);
                     return new CommonException(ErrorCode.SCHEDULE_NOT_FOUND);
                 });
 
@@ -266,7 +266,7 @@ public class ScheduleService {
         }
 
         log.info("일정 수정 완료 - scheduleId={}", scheduleId);
-        return getScheduleById(scheduleId);
+        return getScheduleById(userId, scheduleId);
     }
 
     /**
@@ -295,14 +295,15 @@ public class ScheduleService {
      *      아니면 발송 이력을 별도 보존할지 결정 필요.
      *    - is_sent=false 인 미발송 알림은 삭제 전 FCM 취소 처리 여부도 검토 필요.</p>
      *
+     * @param userId     요청 유저 ID (JWT에서 추출, 소유자 검증용)
      * @param scheduleId 삭제할 일정 ID
-     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않는 scheduleId
+     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않거나 본인 소유가 아닌 scheduleId
      */
     @Transactional
-    public void deleteSchedule(Long scheduleId) {
-        scheduleMapper.findScheduleById(scheduleId)
+    public void deleteSchedule(Long userId, Long scheduleId) {
+        scheduleMapper.findScheduleById(scheduleId, userId)
                 .orElseThrow(() -> {
-                    log.warn("삭제 대상 일정 없음 - scheduleId={}", scheduleId);
+                    log.warn("삭제 대상 일정 없음 - userId={}, scheduleId={}", userId, scheduleId);
                     return new CommonException(ErrorCode.SCHEDULE_NOT_FOUND);
                 });
 

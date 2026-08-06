@@ -125,7 +125,7 @@ class ScheduleControllerTest {
                 ))
                 .build();
 
-        given(scheduleService.getScheduleById(1001L)).willReturn(mockSchedule);
+        given(scheduleService.getScheduleById(TEST_USER_ID, 1001L)).willReturn(mockSchedule);
 
         // when & then
         mockMvc.perform(get("/api/v1/schedules/1001")
@@ -155,7 +155,7 @@ class ScheduleControllerTest {
                 .alarms(List.of())
                 .build();
 
-        given(scheduleService.getScheduleById(1002L)).willReturn(mockSchedule);
+        given(scheduleService.getScheduleById(TEST_USER_ID, 1002L)).willReturn(mockSchedule);
 
         // when & then
         mockMvc.perform(get("/api/v1/schedules/1002")
@@ -174,7 +174,7 @@ class ScheduleControllerTest {
     void getSchedule_notFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.SCHEDULE_NOT_FOUND))
-                .given(scheduleService).getScheduleById(999L);
+                .given(scheduleService).getScheduleById(TEST_USER_ID, 999L);
 
         // when & then
         mockMvc.perform(get("/api/v1/schedules/999")
@@ -360,7 +360,7 @@ class ScheduleControllerTest {
                 ))
                 .build();
 
-        given(scheduleService.updateSchedule(eq(1001L), any())).willReturn(mockResponse);
+        given(scheduleService.updateSchedule(eq(TEST_USER_ID), eq(1001L), any())).willReturn(mockResponse);
 
         // when & then
         mockMvc.perform(patch("/api/v1/schedules/1001")
@@ -386,7 +386,7 @@ class ScheduleControllerTest {
     void updateSchedule_notFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.SCHEDULE_NOT_FOUND))
-                .given(scheduleService).updateSchedule(eq(999L), any());
+                .given(scheduleService).updateSchedule(eq(TEST_USER_ID), eq(999L), any());
 
         // when & then
         mockMvc.perform(patch("/api/v1/schedules/999")
@@ -406,7 +406,7 @@ class ScheduleControllerTest {
     void updateSchedule_noFields() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.INVALID_INPUT))
-                .given(scheduleService).updateSchedule(eq(1001L), any());
+                .given(scheduleService).updateSchedule(eq(TEST_USER_ID), eq(1001L), any());
 
         // when & then
         mockMvc.perform(patch("/api/v1/schedules/1001")
@@ -427,7 +427,7 @@ class ScheduleControllerTest {
     @DisplayName("DELETE /api/v1/schedules/{scheduleId} - 삭제 성공")
     void deleteSchedule_success() throws Exception {
         // given
-        willDoNothing().given(scheduleService).deleteSchedule(1001L);
+        willDoNothing().given(scheduleService).deleteSchedule(TEST_USER_ID, 1001L);
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/1001")
@@ -442,7 +442,7 @@ class ScheduleControllerTest {
     void deleteSchedule_notFound() throws Exception {
         // given
         willThrow(new CommonException(ErrorCode.SCHEDULE_NOT_FOUND))
-                .given(scheduleService).deleteSchedule(999L);
+                .given(scheduleService).deleteSchedule(TEST_USER_ID, 999L);
 
         // when & then
         mockMvc.perform(delete("/api/v1/schedules/999")

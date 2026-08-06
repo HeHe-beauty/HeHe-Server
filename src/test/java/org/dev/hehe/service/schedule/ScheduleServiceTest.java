@@ -225,11 +225,11 @@ class ScheduleServiceTest {
         ScheduleAlarm alarm1 = createAlarm(scheduleId, "1H", visitTime - 3_600, false);
         ScheduleAlarm alarm2 = createAlarm(scheduleId, "1D", visitTime - 86_400, false);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of(alarm1, alarm2));
 
         // when
-        ScheduleResponse result = scheduleService.getScheduleById(scheduleId);
+        ScheduleResponse result = scheduleService.getScheduleById(1L, scheduleId);
 
         // then
         assertThat(result.getScheduleId()).isEqualTo(scheduleId);
@@ -248,16 +248,33 @@ class ScheduleServiceTest {
         long scheduleId = 1002L;
         Schedule schedule = createSchedule(scheduleId, "홍대 스킨케어", null, 1741766400L, true);
 
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(schedule));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(schedule));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
 
         // when
-        ScheduleResponse result = scheduleService.getScheduleById(scheduleId);
+        ScheduleResponse result = scheduleService.getScheduleById(1L, scheduleId);
 
         // then
         assertThat(result.getScheduleId()).isEqualTo(scheduleId);
         assertThat(result.getProcedureName()).isNull();
         assertThat(result.getAlarms()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("일정 단건 조회 실패 - 다른 유저 소유 일정이면 SCHEDULE_NOT_FOUND")
+    void getScheduleById_otherUsersSchedule_notFound() {
+        // given: scheduleId는 존재하지만 userId=1L 소유가 아니므로 mapper가 빈 Optional 반환
+        long scheduleId = 1001L;
+        long otherUserId = 2L;
+        given(scheduleMapper.findScheduleById(scheduleId, otherUserId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> scheduleService.getScheduleById(otherUserId, scheduleId))
+                .isInstanceOf(CommonException.class)
+                .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
+
+        verify(scheduleMapper).findScheduleById(scheduleId, otherUserId);
+        verifyNoMoreInteractions(scheduleMapper);
     }
 
     // =============================================
@@ -285,13 +302,13 @@ class ScheduleServiceTest {
         Schedule updated  = createSchedule(scheduleId, "신 클리닉", "제모", visitTime, true);
         ScheduleUpdateRequest request = createUpdateRequest("신 클리닉", null, null);
 
-        given(scheduleMapper.findScheduleById(scheduleId))
+        given(scheduleMapper.findScheduleById(scheduleId, 1L))
                 .willReturn(Optional.of(existing))   // 존재 확인
                 .willReturn(Optional.of(updated));    // 수정 후 재조회
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
 
         // when
-        ScheduleResponse result = scheduleService.updateSchedule(scheduleId, request);
+        ScheduleResponse result = scheduleService.updateSchedule(1L, scheduleId, request);
 
         // then
         assertThat(result.getHospitalName()).isEqualTo("신 클리닉");
@@ -308,13 +325,13 @@ class ScheduleServiceTest {
         Schedule updated  = createSchedule(scheduleId, "신 클리닉", "신 시술", 1741766400L, true);
         ScheduleUpdateRequest request = createUpdateRequest("신 클리닉", "신 시술", 1741766400L);
 
-        given(scheduleMapper.findScheduleById(scheduleId))
+        given(scheduleMapper.findScheduleById(scheduleId, 1L))
                 .willReturn(Optional.of(existing))
                 .willReturn(Optional.of(updated));
         given(scheduleMapper.findAlarmsByScheduleIds(List.of(scheduleId))).willReturn(List.of());
 
         // when
-        ScheduleResponse result = scheduleService.updateSchedule(scheduleId, request);
+        ScheduleResponse result = scheduleService.updateSchedule(1L, scheduleId, request);
 
         // then
         assertThat(result.getHospitalName()).isEqualTo("신 클리닉");
@@ -329,10 +346,10 @@ class ScheduleServiceTest {
     void updateSchedule_notFound() {
         // given
         ScheduleUpdateRequest request = createUpdateRequest("클리닉", null, null);
-        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+        given(scheduleMapper.findScheduleById(999L, 1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.updateSchedule(999L, request))
+        assertThatThrownBy(() -> scheduleService.updateSchedule(1L, 999L, request))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
 
@@ -346,7 +363,7 @@ class ScheduleServiceTest {
         ScheduleUpdateRequest request = createUpdateRequest(null, null, null);
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.updateSchedule(1001L, request))
+        assertThatThrownBy(() -> scheduleService.updateSchedule(1L, 1001L, request))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
 
@@ -361,7 +378,7 @@ class ScheduleServiceTest {
         ScheduleUpdateRequest request = createUpdateRequest("   ", null, null);
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.updateSchedule(1001L, request))
+        assertThatThrownBy(() -> scheduleService.updateSchedule(1L, 1001L, request))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT));
 
@@ -378,14 +395,14 @@ class ScheduleServiceTest {
         // given
         long scheduleId = 1001L;
         Schedule existing = createSchedule(scheduleId, "강남 클리닉", null, 1741680000L, true);
-        given(scheduleMapper.findScheduleById(scheduleId)).willReturn(Optional.of(existing));
+        given(scheduleMapper.findScheduleById(scheduleId, 1L)).willReturn(Optional.of(existing));
 
         // when
-        scheduleService.deleteSchedule(scheduleId);
+        scheduleService.deleteSchedule(1L, scheduleId);
 
         // then: 알림 전체 삭제 → 일정 삭제 순서 보장
         org.mockito.InOrder inOrder = org.mockito.Mockito.inOrder(scheduleMapper);
-        inOrder.verify(scheduleMapper).findScheduleById(scheduleId);
+        inOrder.verify(scheduleMapper).findScheduleById(scheduleId, 1L);
         inOrder.verify(scheduleMapper).deleteAllAlarmsByScheduleId(scheduleId);
         inOrder.verify(scheduleMapper).deleteSchedule(scheduleId);
     }
@@ -394,14 +411,14 @@ class ScheduleServiceTest {
     @DisplayName("일정 삭제 실패 - 존재하지 않는 scheduleId → S001")
     void deleteSchedule_notFound() {
         // given
-        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+        given(scheduleMapper.findScheduleById(999L, 1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.deleteSchedule(999L))
+        assertThatThrownBy(() -> scheduleService.deleteSchedule(1L, 999L))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> assertThat(((CommonException) e).getErrorCode()).isEqualTo(ErrorCode.SCHEDULE_NOT_FOUND));
 
-        verify(scheduleMapper).findScheduleById(999L);
+        verify(scheduleMapper).findScheduleById(999L, 1L);
         verifyNoMoreInteractions(scheduleMapper);
     }
 
@@ -558,10 +575,10 @@ class ScheduleServiceTest {
     @DisplayName("존재하지 않는 scheduleId 조회 시 SCHEDULE_NOT_FOUND 예외 발생")
     void getScheduleById_notFound() {
         // given: mapper가 빈 Optional 반환
-        given(scheduleMapper.findScheduleById(999L)).willReturn(Optional.empty());
+        given(scheduleMapper.findScheduleById(999L, 1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> scheduleService.getScheduleById(999L))
+        assertThatThrownBy(() -> scheduleService.getScheduleById(1L, 999L))
                 .isInstanceOf(CommonException.class)
                 .satisfies(e -> {
                     CommonException ce = (CommonException) e;
@@ -570,7 +587,7 @@ class ScheduleServiceTest {
                 });
 
         // 일정이 없으면 알림 쿼리는 호출되면 안 됨
-        verify(scheduleMapper).findScheduleById(999L);
+        verify(scheduleMapper).findScheduleById(999L, 1L);
         verifyNoMoreInteractions(scheduleMapper);
     }
 }

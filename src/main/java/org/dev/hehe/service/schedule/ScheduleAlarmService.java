@@ -36,17 +36,18 @@ public class ScheduleAlarmService {
      *   <li>alarmTime 계산 후 INSERT — 이미 존재하면 ALARM_ALREADY_EXISTS</li>
      * </ol>
      *
+     * @param userId     요청 유저 ID (JWT에서 추출, 소유자 검증용)
      * @param scheduleId 대상 일정 ID
      * @param alarmType  등록할 알림 유형 (1H, 1D, 3D)
      * @return 등록된 알림 응답 DTO
      * @throws CommonException INVALID_INPUT       — 지원하지 않는 alarmType
-     * @throws CommonException SCHEDULE_NOT_FOUND  — 존재하지 않는 scheduleId
+     * @throws CommonException SCHEDULE_NOT_FOUND  — 존재하지 않거나 본인 소유가 아닌 scheduleId
      * @throws CommonException ALARM_ALREADY_EXISTS — 이미 등록된 alarmType
      */
     @Transactional
-    public ScheduleAlarmResponse addAlarm(Long scheduleId, String alarmType) {
+    public ScheduleAlarmResponse addAlarm(Long userId, Long scheduleId, String alarmType) {
         validateAlarmType(alarmType);
-        Schedule schedule = findScheduleOrThrow(scheduleId);
+        Schedule schedule = findScheduleOrThrow(userId, scheduleId);
 
         long alarmTime = resolveAlarmTime(alarmType, schedule.getVisitTime());
 
@@ -75,16 +76,17 @@ public class ScheduleAlarmService {
      *   <li>DELETE — 존재하지 않으면 ALARM_NOT_FOUND</li>
      * </ol>
      *
+     * @param userId     요청 유저 ID (JWT에서 추출, 소유자 검증용)
      * @param scheduleId 대상 일정 ID
      * @param alarmType  삭제할 알림 유형 (1H, 1D, 3D)
      * @throws CommonException INVALID_INPUT      — 지원하지 않는 alarmType
-     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않는 scheduleId
+     * @throws CommonException SCHEDULE_NOT_FOUND — 존재하지 않거나 본인 소유가 아닌 scheduleId
      * @throws CommonException ALARM_NOT_FOUND    — 등록되지 않은 alarmType
      */
     @Transactional
-    public void removeAlarm(Long scheduleId, String alarmType) {
+    public void removeAlarm(Long userId, Long scheduleId, String alarmType) {
         validateAlarmType(alarmType);
-        findScheduleOrThrow(scheduleId);
+        findScheduleOrThrow(userId, scheduleId);
 
         log.debug("알림 삭제 시도 - scheduleId={}, alarmType={}", scheduleId, alarmType);
         int affected = scheduleMapper.deleteScheduleAlarm(scheduleId, alarmType);
@@ -110,16 +112,17 @@ public class ScheduleAlarmService {
     }
 
     /**
-     * scheduleId로 일정 조회 — 존재하지 않으면 SCHEDULE_NOT_FOUND 예외
+     * scheduleId로 일정 조회 — 존재하지 않거나 본인 소유가 아니면 SCHEDULE_NOT_FOUND 예외
      *
+     * @param userId     요청 유저 ID (소유자 검증용)
      * @param scheduleId 조회할 일정 ID
      * @return 일정 도메인 객체
      * @throws CommonException SCHEDULE_NOT_FOUND
      */
-    private Schedule findScheduleOrThrow(Long scheduleId) {
-        return scheduleMapper.findScheduleById(scheduleId)
+    private Schedule findScheduleOrThrow(Long userId, Long scheduleId) {
+        return scheduleMapper.findScheduleById(scheduleId, userId)
                 .orElseThrow(() -> {
-                    log.warn("일정을 찾을 수 없음 - scheduleId={}", scheduleId);
+                    log.warn("일정을 찾을 수 없음 - userId={}, scheduleId={}", userId, scheduleId);
                     return new CommonException(ErrorCode.SCHEDULE_NOT_FOUND);
                 });
     }

@@ -36,7 +36,7 @@ public class ScheduleAlarmController implements ScheduleAlarmApiSpecification {
                                                         @PathVariable Long scheduleId,
                                                         @RequestBody ScheduleAlarmRequest request) {
         log.info("[POST] /api/v1/schedules/{}/alarms - userId={}, alarmType={}", scheduleId, userId, request.getAlarmType());
-        ScheduleAlarmResponse response = scheduleAlarmService.addAlarm(scheduleId, request.getAlarmType());
+        ScheduleAlarmResponse response = scheduleAlarmService.addAlarm(userId, scheduleId, request.getAlarmType());
         log.info("알림 등록 완료 - scheduleId={}, alarmType={}", scheduleId, request.getAlarmType());
         return ApiResult.ok(response);
     }
@@ -48,7 +48,7 @@ public class ScheduleAlarmController implements ScheduleAlarmApiSpecification {
                                           @PathVariable Long scheduleId,
                                           @PathVariable String alarmType) {
         log.info("[DELETE] /api/v1/schedules/{}/alarms/{} - userId={}, 알림 삭제 요청", scheduleId, alarmType, userId);
-        scheduleAlarmService.removeAlarm(scheduleId, alarmType);
+        scheduleAlarmService.removeAlarm(userId, scheduleId, alarmType);
         log.info("알림 삭제 완료 - scheduleId={}, alarmType={}", scheduleId, alarmType);
         return ApiResult.ok(null);
     }

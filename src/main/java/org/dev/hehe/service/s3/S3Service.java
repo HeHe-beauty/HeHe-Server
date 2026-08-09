@@ -36,13 +36,16 @@ public class S3Service {
     /**
      * S3에 파일 업로드
      *
+     * <p>S3 key에는 클라이언트가 보낸 원본 파일명을 쓰지 않고 UUID + 확장자만 사용한다.
+     * 검증되지 않은 문자열이 key에 들어가는 것을 원천 차단하기 위함.</p>
+     *
      * @param file      업로드할 파일
      * @param directory S3 저장 디렉터리 (예: "articles")
      * @return 업로드된 파일의 S3 URL
      * @throws BusinessException 파일 업로드 실패 시 INTERNAL_SERVER_ERROR
      */
     public String upload(MultipartFile file, String directory) {
-        String fileName = directory + "/" + UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String fileName = directory + "/" + UUID.randomUUID() + resolveExtension(file.getContentType());
 
         try {
             PutObjectRequest request = PutObjectRequest.builder()
@@ -79,6 +82,22 @@ public class S3Service {
 
         s3Client.deleteObject(request);
         log.info("S3 파일 삭제 완료 - key: {}", key);
+    }
+
+    /**
+     * Content-Type을 S3 key용 확장자로 변환
+     *
+     * <p>UploadController.validateFile()에서 이미 허용된 타입(jpeg/jpg/png/webp)인지 검증된 상태로 들어온다.</p>
+     *
+     * @param contentType 파일의 Content-Type
+     * @return 점(.) 포함 확장자 (예: ".png")
+     */
+    private String resolveExtension(String contentType) {
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> ".jpg"; // image/jpeg, image/jpg
+        };
     }
 
     /**

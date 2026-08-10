@@ -58,7 +58,7 @@ jobs:
               --name hehe-server \
               --network=host \
               -e JAVA_OPTS="-Xmx256m" \
-              -e JWT_SECRET="JfV/ZoMm8s33sznFmOfhPk4IVZCm6U74iHRIgo/q0kc=" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e SPRING_CONFIG_ADDITIONAL_LOCATION="file:/app/application-prod.yml" \
               -e FIREBASE_CREDENTIALS_PATH="/etc/hehe/firebase-service-account.json" \
               -v ~/app/application-prod.yml:/app/application-prod.yml \
